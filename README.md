@@ -29,3 +29,4 @@ Push the folder to a private GitHub repository, import it into Vercel, and add t
 
 ## Next phase
 Add Supabase persistence, a private Shopify app with minimal read-only scopes and product webhooks, Meta/Pinterest OAuth, scheduling, approval roles and analytics.
+"# esoukk-ai-content-studio" 
