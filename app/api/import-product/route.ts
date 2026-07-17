@@ -1,0 +1,2 @@
+import {NextRequest,NextResponse} from "next/server"; import {z} from "zod"; import {importShopifyProduct} from "@/lib/shopify";
+export async function POST(req:NextRequest){try{const {url}=z.object({url:z.string().url()}).parse(await req.json());return NextResponse.json({product:await importShopifyProduct(url)});}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Unable to import product."},{status:400})}}

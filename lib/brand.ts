@@ -1,0 +1,1 @@
+export const brand={storeName:"eSoukk",labelName:"KAVIA",descriptor:"ACTIVEWEAR & LIFESTYLE",palette:{charcoal:"#181818",ivory:"#F2ECE4",gold:"#C8A96A",sand:"#D8C8B6",mocha:"#8A6E58",taupe:"#B8A89B",white:"#FFFFFF"},voice:["premium but approachable","confident and feminine","clear rather than exaggerated","UAE-relevant","never invent fabric, performance or medical claims"]};

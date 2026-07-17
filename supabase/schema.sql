@@ -1,0 +1,5 @@
+create extension if not exists "pgcrypto";
+create table organizations(id uuid primary key default gen_random_uuid(),name text not null,created_at timestamptz default now());
+create table products(id uuid primary key default gen_random_uuid(),organization_id uuid references organizations(id) on delete cascade,handle text not null,url text not null,title text not null,snapshot jsonb not null,created_at timestamptz default now());
+create table campaigns(id uuid primary key default gen_random_uuid(),organization_id uuid references organizations(id) on delete cascade,product_id uuid references products(id) on delete set null,status text default 'draft',settings jsonb default '{}'::jsonb,copy jsonb default '{}'::jsonb,created_at timestamptz default now());
+create table assets(id uuid primary key default gen_random_uuid(),organization_id uuid references organizations(id) on delete cascade,campaign_id uuid references campaigns(id) on delete cascade,platform text,format text,storage_path text,metadata jsonb default '{}'::jsonb,created_at timestamptz default now());
