@@ -1,32 +1,58 @@
-# eSoukk AI Content Studio
+# V2.1.1 Build Fix
 
-A working MVP that converts a public Shopify product link into AI-written captions, Story copy, Pinterest copy, Reel guidance, email copy, SEO copy and downloadable branded PNG creatives.
+This package fixes the missing ShopifyProductPicker and CreativeAgentStudio imports in ContentStudio.tsx.
 
-## Included
-- Public Shopify product import
-- English, Arabic or bilingual campaign instructions
-- Instagram portrait, square and Story templates
-- Pinterest Pin template
-- Optional AI lifestyle background
-- Mock mode without an API key
-- Approval-first workflow
+# eSoukk AI Commerce Studio V2.1 — Shopify + Creative Agent
 
-## Run locally
-1. Install Node.js 20+
-2. Extract the project
-3. In the project folder run:
-```bash
-npm install
-cp .env.example .env.local
-npm run dev
+## Included in this build
+
+- Secure Shopify Admin product catalogue
+- Search by product title or SKU
+- High-converting hook generator
+- Platform-specific creative specifications
+- Instagram, Facebook, TikTok, YouTube Shorts, Pinterest and Snapchat plans
+- UGC scripts
+- Ad creative video storyboards
+- Shot lists, overlays and voiceovers
+- High-resolution image-generation prompts
+- Existing downloadable branded product creatives
+- Read-only Shopify access
+
+## Important limitation
+
+This build automatically creates the complete creative production pack, but it does not automatically render:
+
+- Photorealistic AI lifestyle images
+- Finished UGC videos with AI actors
+- Finished ad videos
+
+Those outputs require paid image/video generation providers or uploaded product footage. The app is provider-ready, but no paid provider is enabled by default.
+
+This limitation prevents unexpected charges and avoids misleading users about free AI rendering.
+
+## Required Shopify environment variables
+
+```text
+SHOPIFY_SHOP=12dafb
+SHOPIFY_CLIENT_ID=
+SHOPIFY_CLIENT_SECRET=
+SHOPIFY_API_VERSION=2026-07
 ```
-4. Open http://localhost:3000
 
-Add your OpenAI API key to `.env.local` for live AI generation. Never share or commit the key.
+Never commit real secrets.
 
-## Deploy
-Push the folder to a private GitHub repository, import it into Vercel, and add the environment variables under Project Settings.
+## Deployment
 
-## Next phase
-Add Supabase persistence, a private Shopify app with minimal read-only scopes and product webhooks, Meta/Pinterest OAuth, scheduling, approval roles and analytics.
-"# esoukk-ai-content-studio" 
+Copy this package over the current project, then run:
+
+```cmd
+npm install
+npm run build
+git add .
+git commit -m "Add V2 creative agent"
+git push
+```
+
+Vercel deploys automatically.
+
+Do not run `npm audit fix --force`.
