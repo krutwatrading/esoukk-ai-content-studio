@@ -9,6 +9,7 @@ import ShopifyAutomation from "./ShopifyAutomation";
 import BrandLogo from "./BrandLogo";
 import VisualConceptPicker from "./VisualConceptPicker";
 import MetaPublishingPanel from "./MetaPublishingPanel";
+import PublishingApprovalPanel from "./PublishingApprovalPanel";
 import type { BrandProfile, CampaignCopy, ProductData, VisualStyle } from "@/lib/types";
 
 export default function ContentStudio({initialBrandProfile}:{initialBrandProfile:BrandProfile}) {
@@ -48,6 +49,7 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
     </section>
     {product&&<section className="workspace"><aside className="panel product-card">{product.images[0]&&<img src={product.images[0]} alt={product.title}/>}<h2>{product.title}</h2><div className="price">{price}</div><p>{product.description.slice(0,260)}{product.description.length>260?"…":""}</p><a href={product.url} target="_blank" rel="noreferrer">Open product ↗</a></aside><div className="panel output-panel">{!campaign?<div className="empty">Generate the campaign to see platform variations, creatives, video guidance and SEO.</div>:<><div className="tabs">{["copy","creatives","video","seo"].map(item=><button type="button" key={item} className={`tab ${tab===item?"active":""}`} onClick={()=>setTab(item)}>{item.toUpperCase()}</button>)}</div>
       {tab==="copy"&&<div className="copy-grid">{copyCards.map(([label,text])=><div className="copy-card platform-copy-card" key={label}><h3>{label}</h3><p>{text}</p><button type="button" className={copied===label?"copy-confirmed":""} onClick={()=>cp(label,text)}>{copied===label?"Copied ✓":`Copy ${label}`}</button></div>)}</div>}
+      {tab==="copy"&&<PublishingApprovalPanel product={product} campaign={campaign}/>} 
       {tab==="creatives"&&<div className="creative-grid"><CreativeCanvas label="Instagram Portrait" width={1080} height={1350} product={product} campaign={campaign} background={background} style={style as VisualStyle}/><CreativeCanvas label="Facebook Square" width={1080} height={1080} product={product} campaign={campaign} background={background} style={style as VisualStyle}/><CreativeCanvas label="Instagram Story" width={1080} height={1920} product={product} campaign={campaign} background={background} style={style as VisualStyle}/><CreativeCanvas label="Pinterest Pin" width={1000} height={1500} product={product} campaign={campaign} background={background} style={style as VisualStyle}/></div>}
       {tab==="video"&&<div className="copy-grid"><div className="copy-card"><h3>Reel/TikTok Hook</h3><p>{campaign.reelHook}</p></div><div className="copy-card"><h3>4-Scene Video Plan</h3><p>{campaign.reelScript.map((x,i)=>`${i+1}. ${x}`).join("\n\n")}</p></div></div>}
       {tab==="seo"&&<div className="copy-grid"><div className="copy-card"><h3>SEO Title</h3><p>{campaign.seoTitle}</p></div><div className="copy-card"><h3>Meta Description</h3><p>{campaign.metaDescription}</p></div><div className="copy-card full"><h3>Compliance Check</h3><p>{campaign.complianceNotes.map(x=>`• ${x}`).join("\n")}</p></div></div>}
