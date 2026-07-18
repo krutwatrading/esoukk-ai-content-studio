@@ -1,3 +1,47 @@
-import OpenAI from "openai"; import {brand} from "./brand"; import {CampaignCopy,CampaignRequest} from "./types";
-const fallback=(r:CampaignRequest):CampaignCopy=>({campaignAngle:"Elevated everyday style",headline:r.product.title,subheadline:r.offer||"A refined new arrival for your everyday wardrobe.",cta:"SHOP NOW",instagramCaption:`${r.product.title}\n\nDesigned for effortless styling from day to evening. Discover it now at eSoukk.\n\n${r.offer?`${r.offer}\n\n`:""}Shop via the link in bio.`,facebookCaption:`Meet ${r.product.title}. A polished new arrival selected for comfort, versatility and modern style. ${r.offer||"Available now at eSoukk."}`,storyFrames:[`NEW AT ESOUKK\n${r.product.title}`,"EFFORTLESS STYLE\nFOR EVERYDAY MOMENTS",`${r.offer||"DISCOVER THE EDIT"}\nSHOP NOW`],pinterestTitle:`${r.product.title} | Women's Fashion UAE`,pinterestDescription:`Discover ${r.product.title} at eSoukk. Premium, versatile women's fashion selected for modern wardrobes in the UAE.`,reelHook:"The new piece your wardrobe was waiting for.",reelScript:["Open with a close-up texture shot.","Show the full silhouette in motion.","Highlight one styling detail.","End with the product title and SHOP NOW."],emailSubject:`Just in: ${r.product.title}`,emailPreview:"A polished new arrival is waiting for you.",hashtags:["#eSoukk","#UAEFashion","#WomensFashion","#NewArrival","#AffordableLuxury","#DubaiFashion","#ShopUAE","#StyleEdit"],seoTitle:`${r.product.title} | Women's Fashion UAE | eSoukk`,metaDescription:`Shop ${r.product.title} online in the UAE at eSoukk. Discover elevated women's fashion with secure checkout and convenient delivery.`,complianceNotes:["Mock mode used because OPENAI_API_KEY is not configured.","Verify all product claims before publishing."]});
-export async function generateCampaign(r:CampaignRequest):Promise<CampaignCopy>{if(!process.env.OPENAI_API_KEY)return fallback(r);const client=new OpenAI({apiKey:process.env.OPENAI_API_KEY});const response=await client.responses.create({model:process.env.OPENAI_TEXT_MODEL||"gpt-5-mini",input:`You are the senior social commerce strategist for ${brand.storeName}, a UAE women's fashion and lifestyle retailer. Create a full campaign using only supplied facts. Brand voice: ${brand.voice.join("; ")}. Never invent fabric, origin, sustainability, medical, shaping, performance, delivery, discount, stock or warranty claims. Return valid JSON only with keys campaignAngle, headline, subheadline, cta, instagramCaption, facebookCaption, storyFrames (3), pinterestTitle, pinterestDescription, reelHook, reelScript (4), emailSubject, emailPreview, hashtags (8), seoTitle, metaDescription, complianceNotes. Settings: ${JSON.stringify({goal:r.goal,language:r.language,style:r.style,offer:r.offer||null,audience:r.audience})}. Product: ${JSON.stringify(r.product)}`});return JSON.parse(response.output_text) as CampaignCopy;}
+import OpenAI from "openai";
+import { brand } from "./brand";
+import type { CampaignCopy, CampaignRequest } from "./types";
+
+const fallback = (r: CampaignRequest): CampaignCopy => {
+  const name=r.product.title, offer=r.offer?.trim(), store=r.brandProfile?.storeName||brand.storeName;
+  const igTags=["#eSoukk","#UAEFashion","#WomensFashion","#NewArrival","#DubaiStyle","#ShopUAE"];
+  return {
+    campaignAngle:"One product, styled for modern UAE life", headline:name, subheadline:offer||"A refined addition to your everyday edit.", cta:r.brandProfile?.approvedCtas?.[0]||"SHOP NOW",
+    instagramCaption:`A new favourite has entered the edit. ✨\n\nMeet ${name}—chosen for effortless styling from weekday plans to weekend moments.${offer?`\n\n${offer}`:""}\n\nTap the link in bio to discover it at ${store}.`, instagramHashtags:igTags,
+    facebookCaption:`Looking for an easy way to refresh your wardrobe? Meet ${name}. Explore the details, available options and current price on ${store}.${offer?` ${offer}`:""}\n\nShop online today.`, facebookHashtags:["#eSoukkUAE","#ShopOnlineUAE"],
+    storyFrames:[`NEW IN\n${name}`,"YOUR NEXT STYLE DISCOVERY\nSEE THE DETAILS",`${offer||"AVAILABLE NOW"}\nSHOP NOW`],
+    pinterestTitle:`${name} | UAE Style Inspiration`, pinterestDescription:`Save this style idea for later. Discover ${name} from ${store}, selected for a polished modern wardrobe. View product details and available options online.`, pinterestHashtags:["#UAEStyle","#WomensStyle","#FashionInspiration"],
+    xPost:`Just landed: ${name}. A polished new addition to the ${store} edit.${offer?` ${offer}`:""} Explore it now → ${r.product.url}`,
+    linkedinPost:`What makes an ecommerce product launch effective? Clear positioning, consistent presentation and copy tailored to where customers discover it.\n\nOur latest edit, ${name}, is now live at ${store}.`,
+    tiktokCaption:`POV: you found the piece that makes getting dressed easier ✨ ${name} is now live.${offer?` ${offer}`:""}`, tiktokHashtags:["#FashionTok","#UAEFashion","#DubaiStyle","#eSoukkFinds"],
+    reelHook:"POV: your wardrobe just found its newest favourite.", reelScript:["Hook: fast product reveal with the product name on screen.","Show two close-up product details without unsupported claims.","Show a complete styling moment and available options.","End card: product name, offer if supplied, and SHOP NOW."],
+    emailSubject:`New at ${store}: ${name}`, emailPreview:"Meet the latest addition to our curated edit.", emailBody:`Introducing ${name}\n\nA fresh style discovery is waiting. Explore the product details, available variants and current price online.${offer?`\n\n${offer}`:""}\n\nShop the new arrival →`,
+    hashtags:igTags, seoTitle:`${name} | Women's Fashion UAE | ${store}`, metaDescription:`Shop ${name} online in the UAE at ${store}. View product details, available options and current pricing.`,
+    complianceNotes:["Fallback copy used because OPENAI_API_KEY is not configured.","Each platform uses a different hook, structure, length and hashtag strategy.","Verify product and promotional claims before publishing."]
+  };
+};
+
+export async function generateCampaign(r:CampaignRequest):Promise<CampaignCopy>{
+  const base=fallback(r);
+  if(!process.env.OPENAI_API_KEY)return base;
+  const client=new OpenAI({apiKey:process.env.OPENAI_API_KEY});
+  const response=await client.responses.create({model:process.env.OPENAI_TEXT_MODEL||"gpt-5-mini",input:`You are the senior social commerce strategist for a UAE ecommerce brand. Create one coordinated campaign, but write genuinely distinct native copy for every platform. Do not reuse the same opening sentence, paragraph structure, CTA, or hashtag block across platforms.
+
+Platform rules:
+- Instagram: aspirational visual storytelling, short paragraphs, tasteful emojis, 5-8 discovery hashtags.
+- Facebook: benefit-led and conversational, more context, direct link-friendly CTA, 1-3 hashtags.
+- Instagram Story: exactly 3 concise frames, each suitable for on-image text, final frame has CTA.
+- Pinterest: search-led evergreen title and description, keyword-rich but natural, 2-4 hashtags.
+- X: concise, punchy, maximum 260 characters including the product URL, at most 2 hashtags.
+- LinkedIn: professional ecommerce/lifestyle angle; no hashtags unless genuinely relevant. Do not force a consumer sales pitch.
+- TikTok: hook-led creator language, short caption, trend-aware without invented trends, 3-5 hashtags.
+- Email: curiosity-driven subject, preview and a short product body with a clear CTA.
+
+Use only supplied product facts. Never invent fabric, origin, sustainability, medical, shaping, performance, delivery, discount, stock or warranty claims. Follow the saved brand profile. Return valid JSON only with these exact keys: campaignAngle, headline, subheadline, cta, instagramCaption, instagramHashtags, facebookCaption, facebookHashtags, storyFrames, pinterestTitle, pinterestDescription, pinterestHashtags, xPost, linkedinPost, tiktokCaption, tiktokHashtags, reelHook, reelScript, emailSubject, emailPreview, emailBody, seoTitle, metaDescription, complianceNotes.
+
+Brand profile: ${JSON.stringify(r.brandProfile||{storeName:brand.storeName,voice:brand.voice})}
+Campaign settings: ${JSON.stringify({goal:r.goal,language:r.language,style:r.style,offer:r.offer||null,audience:r.audience})}
+Product: ${JSON.stringify(r.product)}`});
+  const generated=JSON.parse(response.output_text) as Partial<CampaignCopy>;
+  return {...base,...generated,hashtags:generated.instagramHashtags||base.instagramHashtags};
+}

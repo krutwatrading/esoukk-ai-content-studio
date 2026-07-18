@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ProductData } from "@/lib/types";
-import { Search, RefreshCw, PackageCheck } from "lucide-react";
+import { Search, RefreshCw, PackageCheck, Check } from "lucide-react";
 
 type ShopifyProduct = ProductData & {
   adminId: string;
@@ -12,9 +12,10 @@ type ShopifyProduct = ProductData & {
 };
 
 export default function ShopifyProductPicker({
-  onSelect
+  onSelect, selectedHandle
 }: {
   onSelect: (product: ProductData) => void;
+  selectedHandle?: string;
 }) {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [query, setQuery] = useState("");
@@ -88,7 +89,7 @@ export default function ShopifyProductPicker({
       {!loading && (
         <div className="shopify-grid">
           {products.map((product) => (
-            <article className="shopify-product" key={product.adminId}>
+            <article className={`shopify-product ${selectedHandle === product.handle ? "selected" : ""}`} key={product.adminId}>
               <div className="product-image-wrap">
                 {product.images[0] ? <img src={product.images[0]} alt={product.title}/> : <div className="no-image">No image</div>}
                 <span className={`product-status ${product.status.toLowerCase()}`}>{product.status}</span>
@@ -97,7 +98,9 @@ export default function ShopifyProductPicker({
                 <h3>{product.title}</h3>
                 <p>{product.currency} {product.price.toFixed(2)}</p>
                 <small>{product.sku ? `SKU: ${product.sku}` : product.productType || "Product"}</small>
-                <button onClick={() => onSelect(product)}>Use this product</button>
+                <button type="button" className={selectedHandle === product.handle ? "selected-product-button" : ""} onClick={() => onSelect(product)} aria-pressed={selectedHandle === product.handle}>
+                  {selectedHandle === product.handle ? <><Check size={16}/> Selected</> : "Use this product"}
+                </button>
               </div>
             </article>
           ))}

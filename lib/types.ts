@@ -1,6 +1,7 @@
 export type ProductData={title:string;handle:string;url:string;vendor?:string;productType?:string;description:string;price:number;compareAtPrice?:number|null;currency:string;images:string[];variants:Array<{id:string|number;title:string;price:number;available:boolean}>};
-export type CampaignRequest={product:ProductData;goal:"new-arrival"|"sales"|"awareness"|"engagement";language:"English"|"Arabic"|"Bilingual";style:"minimal-luxury"|"editorial"|"resort"|"performance";offer?:string;audience?:string};
-export type CampaignCopy={campaignAngle:string;headline:string;subheadline:string;cta:string;instagramCaption:string;facebookCaption:string;storyFrames:string[];pinterestTitle:string;pinterestDescription:string;reelHook:string;reelScript:string[];emailSubject:string;emailPreview:string;hashtags:string[];seoTitle:string;metaDescription:string;complianceNotes:string[]};
+export type BrandProfile={storeName:string;websiteUrl:string;voice:string[];audiences:string[];approvedCtas:string[];prohibitedClaims:string[]};
+export type CampaignRequest={product:ProductData;goal:"new-arrival"|"sales"|"awareness"|"engagement";language:"English"|"Arabic"|"Bilingual";style:"minimal-luxury"|"editorial"|"resort"|"performance";offer?:string;audience?:string;brandProfile?:BrandProfile};
+export type CampaignCopy={campaignAngle:string;headline:string;subheadline:string;cta:string;instagramCaption:string;instagramHashtags:string[];facebookCaption:string;facebookHashtags:string[];storyFrames:string[];pinterestTitle:string;pinterestDescription:string;pinterestHashtags:string[];xPost:string;linkedinPost:string;tiktokCaption:string;tiktokHashtags:string[];reelHook:string;reelScript:string[];emailSubject:string;emailPreview:string;emailBody:string;hashtags:string[];seoTitle:string;metaDescription:string;complianceNotes:string[]};
 
 
 export type CreativePlatform =
