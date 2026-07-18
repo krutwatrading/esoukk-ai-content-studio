@@ -198,3 +198,29 @@ export async function getShopifyConnectionStatus() {
   `);
   return data.shop;
 }
+
+export async function registerProductWebhooks(callbackUrl: string) {
+  const existing = await shopifyGraphQL<{webhookSubscriptions:{nodes:Array<{id:string;topic:string;uri:string}>}}>(`#graphql
+    query ExistingProductWebhooks($first: Int!) {
+      webhookSubscriptions(first: $first, topics: [PRODUCTS_CREATE, PRODUCTS_UPDATE]) {
+        nodes { id topic uri }
+      }
+    }
+  `,{first:50});
+  const topics=["PRODUCTS_CREATE","PRODUCTS_UPDATE"] as const;
+  const registered:string[]=[];
+  for(const topic of topics){
+    if(existing.webhookSubscriptions.nodes.some(item=>item.topic===topic&&item.uri===callbackUrl)){registered.push(topic);continue;}
+    const result=await shopifyGraphQL<{webhookSubscriptionCreate:{webhookSubscription:{id:string;topic:string;uri:string}|null;userErrors:Array<{field:string[]|null;message:string}>}}>(`#graphql
+      mutation RegisterProductWebhook($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {
+        webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
+          webhookSubscription { id topic uri }
+          userErrors { field message }
+        }
+      }
+    `,{topic,webhookSubscription:{uri:callbackUrl}});
+    if(result.webhookSubscriptionCreate.userErrors.length)throw new Error(result.webhookSubscriptionCreate.userErrors.map(item=>item.message).join("; "));
+    registered.push(topic);
+  }
+  return registered;
+}

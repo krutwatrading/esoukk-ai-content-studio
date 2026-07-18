@@ -5,6 +5,7 @@ import CreativeCanvas from "./CreativeCanvas";
 import ShopifyProductPicker from "./ShopifyProductPicker";
 import CreativeAgentStudio from "./CreativeAgentStudio";
 import BrandProfilePanel from "./BrandProfilePanel";
+import ShopifyAutomation from "./ShopifyAutomation";
 import type { BrandProfile, CampaignCopy, ProductData } from "@/lib/types";
 
 export default function ContentStudio({initialBrandProfile}:{initialBrandProfile:BrandProfile}) {
@@ -33,6 +34,7 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
   return <div className="shell"><header className="topbar"><div className="brandmark">KAVIA<span>ACTIVEWEAR & LIFESTYLE</span></div><div className="badge">eSoukk AI Content Studio · Approval Mode</div></header><main>
     <section className="hero"><h1>One product.<br/>A full campaign.</h1><p>Choose an eSoukk Shopify product. The agent applies your saved brand rules and writes native copy for each platform—not duplicated captions.</p></section>
     <BrandProfilePanel initial={brandProfile} onSaved={setBrandProfile}/>
+    <ShopifyAutomation/>
     <ShopifyProductPicker selectedHandle={product?.handle} onSelect={selected=>{setProduct(selected);setUrl(selected.url);setCampaign(null);setStatus(`Selected ${selected.title}. Campaign settings are ready below.`);setError("");window.setTimeout(()=>document.getElementById("campaign-settings")?.scrollIntoView({behavior:"smooth",block:"start"}),100);}}/>
     <CreativeAgentStudio product={product}/>
     <section className="panel form-panel" id="campaign-settings"><div className="field"><label>SHOPIFY PRODUCT LINK</label><input value={url} onChange={e=>{setUrl(e.target.value);setImported(false)}}/></div><div className="actions"><button type="button" className={`primary ${imported?"action-confirmed":""}`} onClick={imp} disabled={loading||importing} aria-busy={importing}><ShoppingBag size={17}/>{importing?"Importing…":imported?"Imported ✓":"Import Product"}</button></div>
