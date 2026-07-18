@@ -6,6 +6,7 @@ import ShopifyProductPicker from "./ShopifyProductPicker";
 import CreativeAgentStudio from "./CreativeAgentStudio";
 import BrandProfilePanel from "./BrandProfilePanel";
 import ShopifyAutomation from "./ShopifyAutomation";
+import BrandLogo from "./BrandLogo";
 import type { BrandProfile, CampaignCopy, ProductData } from "@/lib/types";
 
 export default function ContentStudio({initialBrandProfile}:{initialBrandProfile:BrandProfile}) {
@@ -31,7 +32,7 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
     ["Email",`${campaign.emailSubject}\n${campaign.emailPreview}\n\n${campaign.emailBody}`]
   ] : [];
 
-  return <div className="shell"><header className="topbar"><div className="brandmark">KAVIA<span>ACTIVEWEAR & LIFESTYLE</span></div><div className="badge">eSoukk AI Content Studio · Approval Mode</div></header><main>
+  return <div className="shell"><header className="topbar"><BrandLogo className="header-logo"/><div className="badge">eSoukk AI Content Studio · Approval Mode</div></header><main>
     <section className="hero"><h1>One product.<br/>A full campaign.</h1><p>Choose an eSoukk Shopify product. The agent applies your saved brand rules and writes native copy for each platform—not duplicated captions.</p></section>
     <BrandProfilePanel initial={brandProfile} onSaved={setBrandProfile}/>
     <ShopifyAutomation/>

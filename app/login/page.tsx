@@ -1,14 +1,10 @@
-import { redirect } from "next/navigation";
-import { sendMagicLink, signIn, signUp } from "@/app/auth/actions";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {redirect} from "next/navigation";
+import {sendMagicLink,signIn,signUp} from "@/app/auth/actions";
+import {createSupabaseServerClient} from "@/lib/supabase/server";
+import BrandLogo from "@/components/BrandLogo";
 
-export const dynamic = "force-dynamic";
-
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string }> }) {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect("/");
-  const params = await searchParams;
-
-  return <main className="auth-page"><section className="auth-card"><div className="auth-brand">KAVIA<span>eSOUKK AI CONTENT STUDIO</span></div><div className="auth-copy"><span>PRIVATE MARKETING WORKSPACE</span><h1>Welcome to your<br/><em>AI creative team.</em></h1><p>Sign in to create, review and approve brand-safe campaigns from your Shopify catalogue.</p></div>{params.error&&<div className="auth-alert error">{params.error}</div>}{params.message&&<div className="auth-alert">{params.message}</div>}<div className="auth-forms"><form action={signIn}><h2>Sign in</h2><label>Email<input name="email" type="email" autoComplete="email" required/></label><label>Password<input name="password" type="password" autoComplete="current-password" required/></label><button type="submit">Sign in securely</button></form><div className="auth-divider"><span>or</span></div><form action={sendMagicLink}><h2>Email link</h2><p>No password required. We will email a one-time sign-in link.</p><label>Email<input name="email" type="email" autoComplete="email" required/></label><button className="secondary-auth" type="submit">Send magic link</button></form><details><summary>Create a new account</summary><form action={signUp}><label>Full name<input name="fullName" autoComplete="name" required/></label><label>Email<input name="email" type="email" autoComplete="email" required/></label><label>Password<input name="password" type="password" minLength={8} autoComplete="new-password" required/></label><button type="submit">Create account</button></form></details></div></section></main>;
+export const dynamic="force-dynamic";
+export default async function LoginPage({searchParams}:{searchParams:Promise<{error?:string;message?:string}>}){
+  const supabase=await createSupabaseServerClient(),{data:{user}}=await supabase.auth.getUser();if(user)redirect("/");const params=await searchParams;
+  return <main className="auth-page"><section className="auth-card"><div className="auth-brand"><BrandLogo className="auth-logo"/></div><div className="auth-copy"><span>PRIVATE MARKETING WORKSPACE</span><h1>Welcome to your<br/><em>AI creative team.</em></h1><p>Sign in to create, review and approve brand-safe campaigns from your Shopify catalogue.</p></div>{params.error&&<div className="auth-alert error">{params.error}</div>}{params.message&&<div className="auth-alert">{params.message}</div>}<div className="auth-forms"><form action={signIn}><h2>Sign in</h2><label>Email<input name="email" type="email" autoComplete="email" required/></label><label>Password<input name="password" type="password" autoComplete="current-password" required/></label><button type="submit">Sign in securely</button></form><div className="auth-divider"><span>or</span></div><form action={sendMagicLink}><h2>Email link</h2><p>No password required. We will email a one-time sign-in link.</p><label>Email<input name="email" type="email" autoComplete="email" required/></label><button className="secondary-auth" type="submit">Send magic link</button></form><details><summary>Create a new account</summary><form action={signUp}><label>Full name<input name="fullName" autoComplete="name" required/></label><label>Email<input name="email" type="email" autoComplete="email" required/></label><label>Password<input name="password" type="password" minLength={8} autoComplete="new-password" required/></label><button type="submit">Create account</button></form></details></div></section></main>;
 }
