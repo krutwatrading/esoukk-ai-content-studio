@@ -52,8 +52,11 @@ export default function ShopifyProductPicker({
   }
 
   useEffect(() => {
-    checkConnection();
-    loadProducts();
+    const startup = window.setTimeout(() => {
+      void checkConnection();
+      void loadProducts();
+    }, 0);
+    return () => window.clearTimeout(startup);
   }, []);
 
   return (

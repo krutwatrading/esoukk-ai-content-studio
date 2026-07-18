@@ -56,3 +56,33 @@ git push
 Vercel deploys automatically.
 
 Do not run `npm audit fix --force`.
+
+## Supabase Phase 1 foundation
+
+The application supports current Supabase publishable/secret keys and legacy
+anon/service-role keys. Prefer the current key format:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=
+```
+
+The secret key is server-only and must never use a `NEXT_PUBLIC_` prefix.
+
+Apply `supabase/migrations/202607180001_phase1_foundation.sql` once through the
+Supabase SQL Editor or with `supabase db push`. The migration creates the
+multi-tenant campaign foundation, approval history, audit log, helper functions,
+indexes, and Row Level Security policies.
+
+After applying it, verify the private server connection at:
+
+```text
+GET /api/supabase/status
+```
+
+Healthy response:
+
+```json
+{"configured":true,"database":true,"message":"Supabase connection and Phase 1 schema are healthy."}
+```

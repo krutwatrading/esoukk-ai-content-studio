@@ -1,4 +1,6 @@
 import {ProductData} from "./types";
+type PublicVariant={id:string|number;title:string;price:number;available:boolean};
+type PublicProduct={title:string;vendor?:string;type?:string;description?:string;price?:number;compare_at_price?:number|null;currency?:string;images?:string[];variants?:PublicVariant[]};
 function allowed(){return(process.env.ALLOWED_SHOPIFY_DOMAINS||"").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean)}
 const money=(v:unknown)=>{const n=Number(v||0);return Number.isFinite(n)?n/100:0};
 export async function importShopifyProduct(productUrl:string):Promise<ProductData>{
@@ -7,8 +9,8 @@ export async function importShopifyProduct(productUrl:string):Promise<ProductDat
  const m=url.pathname.match(/\/products\/([^/?#]+)/); if(!m)throw new Error("Enter a Shopify product URL containing /products/product-handle.");
  const handle=m[1]; const r=await fetch(new URL(`/products/${handle}.js`,url.origin),{cache:"no-store",headers:{"User-Agent":"eSoukk-AI-Content-Studio/1.0"}});
  if(!r.ok)throw new Error(`Shopify returned ${r.status}. Confirm the product is published.`);
- const p=await r.json(); const images=(p.images||[]).map((i:string)=>i.startsWith("//")?`https:${i}`:i);
- const variants=(p.variants||[]).map((v:any)=>({id:v.id,title:v.title,price:money(v.price),available:Boolean(v.available)}));
- const prices=variants.map((v:any)=>v.price).filter(Number.isFinite); const price=prices.length?Math.min(...prices):money(p.price);
+ const p=await r.json() as PublicProduct; const images=(p.images||[]).map((i:string)=>i.startsWith("//")?`https:${i}`:i);
+ const variants=(p.variants||[]).map((v)=>({id:v.id,title:v.title,price:money(v.price),available:Boolean(v.available)}));
+ const prices=variants.map((v)=>v.price).filter(Number.isFinite); const price=prices.length?Math.min(...prices):money(p.price);
  return{title:p.title,handle,url:productUrl,vendor:p.vendor,productType:p.type,description:(p.description||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim(),price,compareAtPrice:p.compare_at_price?money(p.compare_at_price):null,currency:p.currency||"AED",images,variants};
 }
