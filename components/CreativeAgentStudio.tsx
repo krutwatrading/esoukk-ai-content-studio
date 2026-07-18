@@ -26,6 +26,7 @@ export default function CreativeAgentStudio({ product }: { product: ProductData 
   const [plan, setPlan] = useState<CreativePlan | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
 
   async function generate() {
     if (!product) {
@@ -49,7 +50,11 @@ export default function CreativeAgentStudio({ product }: { product: ProductData 
     }
   }
 
-  const copy = (value: string) => navigator.clipboard.writeText(value);
+  const copy = async (key: string, value: string) => {
+    await navigator.clipboard.writeText(value);
+    setCopied(key);
+    window.setTimeout(() => setCopied(current => current === key ? null : current), 1800);
+  };
 
   return (
     <section className="panel creative-agent">
@@ -96,13 +101,13 @@ export default function CreativeAgentStudio({ product }: { product: ProductData 
 
           <div className="result-section">
             <h3><Sparkles size={18}/> High-converting hooks</h3>
-            {plan.hookOptions.map((hook,i)=><div className="result-row" key={i}><span>{i+1}. {hook}</span><button onClick={()=>copy(hook)}><Copy size={14}/></button></div>)}
+            {plan.hookOptions.map((hook,i)=>{const key=`hook-${i}`;return <div className="result-row" key={i}><span>{i+1}. {hook}</span><button type="button" className={copied===key?"copy-confirmed":""} onClick={()=>copy(key,hook)}>{copied===key?"Copied ✓":<Copy size={14}/>}</button></div>})}
           </div>
 
           <div className="result-section">
             <h3><Film size={18}/> UGC video script</h3>
             <pre>{plan.ugcScript.join("\n\n")}</pre>
-            <button onClick={()=>copy(plan.ugcScript.join("\n\n"))}>Copy script</button>
+            <button type="button" className={copied==="script"?"copy-confirmed":""} onClick={()=>copy("script",plan.ugcScript.join("\n\n"))}>{copied==="script"?"Copied ✓":"Copy script"}</button>
           </div>
 
           <div className="result-section">
@@ -117,7 +122,7 @@ export default function CreativeAgentStudio({ product }: { product: ProductData 
 
           <div className="result-section">
             <h3><ImageIcon size={18}/> High-resolution image prompts</h3>
-            {plan.imagePrompts.map((prompt,i)=><div className="result-row" key={i}><span>{prompt}</span><button onClick={()=>copy(prompt)}><Copy size={14}/></button></div>)}
+            {plan.imagePrompts.map((prompt,i)=>{const key=`prompt-${i}`;return <div className="result-row" key={i}><span>{prompt}</span><button type="button" className={copied===key?"copy-confirmed":""} onClick={()=>copy(key,prompt)}>{copied===key?"Copied ✓":<Copy size={14}/>}</button></div>})}
           </div>
 
           <div className="status">
