@@ -1,0 +1,2 @@
+import "server-only";import{createCipheriv,createHash,randomBytes}from"crypto";
+export function encryptToken(value:string){const secret=process.env.SOCIAL_TOKEN_ENCRYPTION_KEY;if(!secret)throw new Error("SOCIAL_TOKEN_ENCRYPTION_KEY is not configured.");const key=createHash("sha256").update(secret).digest(),iv=randomBytes(12),cipher=createCipheriv("aes-256-gcm",key,iv),encrypted=Buffer.concat([cipher.update(value,"utf8"),cipher.final()]),tag=cipher.getAuthTag();return [iv,tag,encrypted].map(item=>item.toString("base64url")).join(".")}
