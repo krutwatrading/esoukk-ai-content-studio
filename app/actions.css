@@ -1,0 +1,15 @@
+button {
+  transition: transform .1s ease, filter .15s ease, box-shadow .15s ease;
+}
+button:active:not(:disabled), a.meta-connect:active {
+  transform: translateY(2px) scale(.97);
+  filter: brightness(.88);
+}
+button:focus-visible, a:focus-visible {
+  outline: 3px solid rgba(200,169,106,.55);
+  outline-offset: 3px;
+}
+button:disabled { cursor: not-allowed; }
+.ui-action { box-shadow: 0 4px 0 rgba(0,0,0,.22); }
+.ui-action:active:not(:disabled) { box-shadow: 0 1px 0 rgba(0,0,0,.2); }
+.action-complete:disabled { opacity: 1 !important; background: #315f42 !important; color: white; }
