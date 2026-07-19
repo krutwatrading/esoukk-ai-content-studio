@@ -21,10 +21,12 @@ create index if not exists campaign_metric_snapshots_campaign_idx
 
 alter table public.campaign_metric_snapshots enable row level security;
 
+drop policy if exists campaign_metric_snapshots_select_member on public.campaign_metric_snapshots;
 create policy campaign_metric_snapshots_select_member
   on public.campaign_metric_snapshots for select to authenticated
   using (public.is_organization_member(organization_id));
 
+drop policy if exists campaign_metric_snapshots_write_admin on public.campaign_metric_snapshots;
 create policy campaign_metric_snapshots_write_admin
   on public.campaign_metric_snapshots for all to authenticated
   using (public.has_organization_role(organization_id,array['owner','admin']::public.organization_role[]))
