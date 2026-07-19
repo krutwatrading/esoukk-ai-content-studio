@@ -13,6 +13,7 @@ import PublishingApprovalPanel from "./PublishingApprovalPanel";
 import ContentReviewQueue from "./ContentReviewQueue";
 import PerformanceIntelligence from "./PerformanceIntelligence";
 import CampaignCalendar from "./CampaignCalendar";
+import CreativeProductionPanel from "./CreativeProductionPanel";
 import type { BrandProfile, CampaignCopy, ProductData, VisualStyle } from "@/lib/types";
 
 type ApiResult={product:ProductData;campaign:CampaignCopy;imageUrl:string;imageUrls?:string[];replacements?:{index:number;imageUrl:string}[];error?:string};
@@ -46,6 +47,7 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
     <section className="hero"><h1>One product.<br/>A full campaign.</h1><p>Choose an eSoukk Shopify product. The agent applies your saved brand rules and writes native copy for each platform—not duplicated captions.</p></section>
     <BrandProfilePanel initial={brandProfile} onSaved={setBrandProfile}/>
     <ShopifyAutomation/>
+    <CreativeProductionPanel/>
     <MetaPublishingPanel/>
     <ContentReviewQueue/>
     <PerformanceIntelligence/>
