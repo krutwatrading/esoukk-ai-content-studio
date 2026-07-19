@@ -38,6 +38,42 @@ async function uploadGeneratedImage(organizationId: string, image: string) {
   return admin.storage.from("campaign-assets").getPublicUrl(path).data.publicUrl;
 }
 
+type RevisionJob = { index: number; instruction: string };
+
+async function planRevisions(client: OpenAI, brief: string, imageTotal: number, selectedIndex: number): Promise<RevisionJob[]> {
+  const response = await client.responses.create({
+    model: process.env.OPENAI_TEXT_MODEL || "gpt-5-mini",
+    input: `You are an expert creative director converting a client's natural-language revision brief into image-editing jobs.
+There are ${imageTotal} existing image options, numbered 1 to ${imageTotal}. The currently selected image is ${selectedIndex + 1}.
+Client brief: ${brief.slice(0, 1600)}
+
+Interpret intent, not keywords:
+- A brief may request one revision containing several changes, or several distinct image variants.
+- "warmer lighting and a road background" is normally one job with two changes.
+- "one image walking on a road and one image at a zebra crossing" is two separate jobs.
+- Explicit image numbers are optional. Respect them when supplied.
+- When separate variants have no numbers, assign the first to the selected image and the remaining variants to other available image slots.
+- Never create more than ${imageTotal} jobs and never assign the same index twice.
+- Preserve every image slot that is not assigned a job.
+
+Return only valid JSON with this exact shape:
+{"jobs":[{"imageNumber":1,"instruction":"complete standalone edit instruction"}]}`,
+  });
+  try {
+    const json = response.output_text.match(/\{[\s\S]*\}/)?.[0];
+    const parsed = json ? JSON.parse(json) as { jobs?: { imageNumber?: unknown; instruction?: unknown }[] } : {};
+    const seen = new Set<number>();
+    const jobs = (parsed.jobs || []).flatMap(job => {
+      const index = Number(job.imageNumber) - 1, instruction = String(job.instruction || "").trim();
+      if (!Number.isInteger(index) || index < 0 || index >= imageTotal || !instruction || seen.has(index)) return [];
+      seen.add(index);
+      return [{ index, instruction }];
+    });
+    if (jobs.length) return jobs;
+  } catch { /* fall back to the selected image below */ }
+  return [{ index: selectedIndex, instruction: brief }];
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is required for AI campaign generation.");
@@ -60,16 +96,14 @@ Creative direction: ${direction}.
 CRITICAL PRODUCT FIDELITY: preserve the product's recognizable colour, silhouette, construction, neckline, sleeves, pockets, closures, proportions, print and material appearance. Do not redesign it or add features not visible in the Shopify reference.`;
 
     const existingImages = Array.isArray(body.existingImages) ? body.existingImages.map(String) : [];
-    const targetIndexes = Array.isArray(body.targetIndexes)
-      ? [...new Set<number>(body.targetIndexes.map(Number).filter((index: number) => Number.isInteger(index) && index >= 0 && index < existingImages.length))]
-      : [];
-
-    if (targetIndexes.length) {
-      const corrections = String(body.corrections || "").trim();
-      if (!corrections) throw new Error("Describe the requested corrections and include the image number.");
-      const replacements = await Promise.all(targetIndexes.map(async index => {
+    const corrections = String(body.corrections || "").trim();
+    if (existingImages.length && corrections) {
+      const selectedIndex = Math.min(existingImages.length - 1, Math.max(0, Number(body.selectedIndex) || 0));
+      const revisionPlan = await planRevisions(client, corrections, existingImages.length, selectedIndex);
+      const replacements = await Promise.all(revisionPlan.map(async job => {
+        const { index, instruction } = job;
         const candidate = await downloadImage(existingImages[index], `campaign-option-${index + 1}`);
-        const prompt = `Revise campaign option ${index + 1} according to this client brief: ${corrections.slice(0, 1200)}
+        const prompt = `Revise campaign option ${index + 1} according to this specific creative-director instruction: ${instruction.slice(0, 1200)}
 The first supplied image is the existing campaign option to revise. The second is the authoritative Shopify product reference.
 ${productContext}
 TARGETED REVISION: change only what the client requested for image ${index + 1}. Preserve all successful aspects of that existing option unless the brief explicitly changes them. Produce exactly one polished photorealistic vertical 4:5 campaign photograph in one continuous scene. Never create a grid, split screen, contact sheet, diptych, triptych or multi-panel collage unless the client explicitly requests that format. No text, logos, watermark or border.`;
@@ -78,7 +112,7 @@ TARGETED REVISION: change only what the client requested for image ${index + 1}.
         if (!image) throw new Error(`No revised image was returned for option ${index + 1}.`);
         return { index, imageUrl: await uploadGeneratedImage(membership.organization_id, image) };
       }));
-      return NextResponse.json({ replacements, model });
+      return NextResponse.json({ replacements, revisionPlan, model });
     }
 
     const prompt = `Create one premium ecommerce campaign photograph using the supplied image only as the product reference. This API request will return multiple separate outputs, so this individual output must contain exactly one photograph.
