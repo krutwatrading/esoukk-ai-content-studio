@@ -13,3 +13,18 @@ button:disabled { cursor: not-allowed; }
 .ui-action { box-shadow: 0 4px 0 rgba(0,0,0,.22); }
 .ui-action:active:not(:disabled) { box-shadow: 0 1px 0 rgba(0,0,0,.2); }
 .action-complete:disabled { opacity: 1 !important; background: #315f42 !important; color: white; }
+.meta-ready .ui-action {
+  border: 1px solid #181818 !important;
+  background: #181818 !important;
+  color: #c8a96a !important;
+  box-shadow: 0 4px 0 rgba(200,169,106,.48) !important;
+  font-weight: 850;
+}
+.meta-ready .ui-action:hover:not(:disabled) {
+  background: #2a251f !important;
+  color: #e0c185 !important;
+}
+.meta-ready .ui-action:active:not(:disabled) {
+  box-shadow: 0 1px 0 rgba(200,169,106,.55) !important;
+}
+.meta-ready .ui-action:disabled { opacity: .62; }
