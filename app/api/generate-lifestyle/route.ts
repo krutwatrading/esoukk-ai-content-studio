@@ -51,6 +51,10 @@ Interpret intent, not keywords:
 - A brief may request one revision containing several changes, or several distinct image variants.
 - "warmer lighting and a road background" is normally one job with two changes.
 - "one image walking on a road and one image at a zebra crossing" is two separate jobs.
+- Expand every job into a complete professional production instruction. Infer essential details the client reasonably expects even when they are not written: location realism, action, pose, complete wardrobe, context-appropriate footwear, accessories, lighting, camera framing, product placement and safety.
+- Mall, street, road, office and gym scenes require suitable footwear unless the client explicitly requests barefoot styling. Beach or pool scenes may be barefoot when contextually appropriate.
+- If the advertised product is footwear, the referenced product itself must be worn and clearly visible. Never invent a conflicting footwear product.
+- Do not carry styling details from one requested variant into another when they conflict with its environment.
 - Explicit image numbers are optional. Respect them when supplied.
 - When separate variants have no numbers, assign the first to the selected image and the remaining variants to other available image slots.
 - Never create more than ${imageTotal} jobs and never assign the same index twice.
@@ -106,7 +110,7 @@ CRITICAL PRODUCT FIDELITY: preserve the product's recognizable colour, silhouett
         const prompt = `Revise campaign option ${index + 1} according to this specific creative-director instruction: ${instruction.slice(0, 1200)}
 The first supplied image is the existing campaign option to revise. The second is the authoritative Shopify product reference.
 ${productContext}
-TARGETED REVISION: change only what the client requested for image ${index + 1}. Preserve all successful aspects of that existing option unless the brief explicitly changes them. Produce exactly one polished photorealistic vertical 4:5 campaign photograph in one continuous scene. Never create a grid, split screen, contact sheet, diptych, triptych or multi-panel collage unless the client explicitly requests that format. No text, logos, watermark or border.`;
+TARGETED REVISION: change what the creative-director instruction requests while preserving successful, non-conflicting aspects of the existing option. Make the scene logically complete: location, action, pose, full wardrobe, accessories, lighting and camera framing must all agree. A model in a mall, street, road, office or gym must wear suitable footwear unless barefoot styling is explicitly requested; beach or pool scenes may be barefoot. If the advertised product is footwear, the model must wear the exact referenced footwear and show it clearly. Show the complete advertised product with safe margin and no obstruction. Produce exactly one polished photorealistic vertical 4:5 campaign photograph in one continuous scene. Never create a grid, split screen, contact sheet, diptych, triptych or multi-panel collage unless the client explicitly requests that format. No text, logos, watermark or border.`;
         const result = await client.images.edit({ model, image: [candidate, productReference], prompt, size: "1024x1536", quality: "medium", n: 1 });
         const image = result.data?.[0]?.b64_json;
         if (!image) throw new Error(`No revised image was returned for option ${index + 1}.`);
@@ -117,7 +121,7 @@ TARGETED REVISION: change only what the client requested for image ${index + 1}.
 
     const prompt = `Create one premium ecommerce campaign photograph using the supplied image only as the product reference. This API request will return multiple separate outputs, so this individual output must contain exactly one photograph.
 ${productContext}
-NEW CREATIVE: generate one photorealistic adult fashion model, one pose, one camera composition and one continuous environment. It must look newly photographed, never like the source pasted onto a background. Show the complete product clearly and naturally worn or carried, with the entire product inside the frame and safe margin around it. Premium vertical Instagram 4:5 composition. Realistic anatomy, hands, fabric drape, shadows and skin. Return exactly one single scene: never a grid, split screen, contact sheet, diptych, triptych or multi-panel collage. No text, logos, watermark, border, duplicated person or extra product.`;
+NEW CREATIVE: generate one photorealistic adult fashion model, one pose, one camera composition and one continuous environment. It must look newly photographed, never like the source pasted onto a background. Create complete, context-appropriate styling including wardrobe, footwear and accessories; never show a barefoot model in a mall, street, road, office or gym unless explicitly requested. If the advertised product is footwear, the model must wear the exact referenced footwear. Show the complete advertised product clearly and naturally worn or carried, with the entire product inside the frame and safe margin around it. Premium vertical Instagram 4:5 composition. Realistic anatomy, hands, feet, fabric drape, shadows and skin. Return exactly one single scene: never a grid, split screen, contact sheet, diptych, triptych or multi-panel collage. No text, logos, watermark, border, duplicated person or extra product.`;
     const result = await client.images.edit({ model, image: productReference, prompt, size: "1024x1536", quality: "medium", n: 4 });
     const images = (result.data || []).map(item => item.b64_json).filter((item): item is string => Boolean(item));
     if (!images.length) throw new Error("No AI campaign images were returned.");
