@@ -72,7 +72,7 @@ CRITICAL PRODUCT FIDELITY: preserve the product's recognizable colour, silhouett
         const prompt = `Revise campaign option ${index + 1} according to this client brief: ${corrections.slice(0, 1200)}
 The first supplied image is the existing campaign option to revise. The second is the authoritative Shopify product reference.
 ${productContext}
-TARGETED REVISION: change only what the client requested for image ${index + 1}. Preserve all successful aspects of that existing option unless the brief explicitly changes them. Produce one polished photorealistic vertical 4:5 campaign photograph. No text, logos, watermark, border or collage.`;
+TARGETED REVISION: change only what the client requested for image ${index + 1}. Preserve all successful aspects of that existing option unless the brief explicitly changes them. Produce exactly one polished photorealistic vertical 4:5 campaign photograph in one continuous scene. Never create a grid, split screen, contact sheet, diptych, triptych or multi-panel collage unless the client explicitly requests that format. No text, logos, watermark or border.`;
         const result = await client.images.edit({ model, image: [candidate, productReference], prompt, size: "1024x1536", quality: "medium", n: 1 });
         const image = result.data?.[0]?.b64_json;
         if (!image) throw new Error(`No revised image was returned for option ${index + 1}.`);
@@ -81,9 +81,9 @@ TARGETED REVISION: change only what the client requested for image ${index + 1}.
       return NextResponse.json({ replacements, model });
     }
 
-    const prompt = `Create four distinct premium ecommerce campaign photographs using the supplied image only as the product reference.
+    const prompt = `Create one premium ecommerce campaign photograph using the supplied image only as the product reference. This API request will return multiple separate outputs, so this individual output must contain exactly one photograph.
 ${productContext}
-NEW CREATIVE: generate distinct photorealistic adult fashion models, poses, camera compositions, environments and lighting across all four options. Every option must look newly photographed, never like the source pasted onto a background. Show the product clearly and naturally worn or carried. Premium vertical Instagram 4:5 compositions. Realistic anatomy, hands, fabric drape, shadows and skin. No text, logos, watermark, border, collage, duplicated person or extra product.`;
+NEW CREATIVE: generate one photorealistic adult fashion model, one pose, one camera composition and one continuous environment. It must look newly photographed, never like the source pasted onto a background. Show the complete product clearly and naturally worn or carried, with the entire product inside the frame and safe margin around it. Premium vertical Instagram 4:5 composition. Realistic anatomy, hands, fabric drape, shadows and skin. Return exactly one single scene: never a grid, split screen, contact sheet, diptych, triptych or multi-panel collage. No text, logos, watermark, border, duplicated person or extra product.`;
     const result = await client.images.edit({ model, image: productReference, prompt, size: "1024x1536", quality: "medium", n: 4 });
     const images = (result.data || []).map(item => item.b64_json).filter((item): item is string => Boolean(item));
     if (!images.length) throw new Error("No AI campaign images were returned.");
