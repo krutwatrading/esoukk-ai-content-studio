@@ -20,6 +20,7 @@ async function run(request: NextRequest) {
   const admin = createSupabaseAdminClient(), now = new Date().toISOString();
   let query = admin.from("campaigns").select("id,organization_id,name,settings,scheduled_for,publish_attempts").eq("status","scheduled").lte("scheduled_for",now).is("external_post_id",null).order("scheduled_for").limit(5);
   if (context.organizationId) query = query.eq("organization_id", context.organizationId);
+  const selectedCampaign=request.nextUrl.searchParams.get("campaignId");if(selectedCampaign)query=query.eq("id",selectedCampaign);
   const { data: campaigns, error: campaignError } = await query;
   if (campaignError) return NextResponse.json({ error: campaignError.message }, { status: 500 });
   const results: Array<{campaignId:string;status:string;postUrl?:string;error?:string}> = [];

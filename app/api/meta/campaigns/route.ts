@@ -9,6 +9,18 @@ async function context() {
   return membership ? { supabase, user, membership } : null;
 }
 
+export async function GET() {
+  const ctx = await context();
+  if (!ctx) return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
+  const { data: campaigns, error } = await ctx.supabase.from("campaigns").select("id,name,status,settings,product_snapshot,scheduled_for,published_at,publishing_error,external_post_url,publish_attempts,created_at").eq("organization_id",ctx.membership.organization_id).order("created_at",{ascending:false}).limit(30);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  const ids=(campaigns||[]).map(item=>item.id);
+  if(!ids.length)return NextResponse.json({campaigns:[]});
+  const { data: variations } = await ctx.supabase.from("campaign_variations").select("id,campaign_id,content").in("campaign_id",ids).eq("platform","instagram").order("created_at",{ascending:false});
+  const variationByCampaign=new Map<string,{id:string;content:Record<string,unknown>}>();for(const variation of variations||[])if(!variationByCampaign.has(variation.campaign_id))variationByCampaign.set(variation.campaign_id,variation);
+  return NextResponse.json({campaigns:(campaigns||[]).map(item=>({...item,variation:variationByCampaign.get(item.id)||null}))});
+}
+
 export async function POST(request: NextRequest) {
   const ctx = await context();
   if (!ctx) return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
@@ -42,6 +54,20 @@ export async function PATCH(request: NextRequest) {
     const { error } = await ctx.supabase.from("campaigns").update({ status: "scheduled", scheduled_for: scheduledFor.toISOString(), publishing_error: null }).eq("id", campaignId).eq("organization_id", ctx.membership.organization_id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ status: "scheduled", scheduledFor: scheduledFor.toISOString() });
+  }
+  if (body.action === "reject") {
+    const { error } = await ctx.supabase.from("approvals").insert({ organization_id: ctx.membership.organization_id, campaign_id: campaignId, variation_id: variationId, decision: "rejected", comment: String(body.comment||"Rejected during review"), decided_by: ctx.user.id });
+    if(error)return NextResponse.json({error:error.message},{status:400});
+    await ctx.supabase.from("campaigns").update({status:"changes_requested",scheduled_for:null}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
+    return NextResponse.json({status:"changes_requested"});
+  }
+  if (body.action === "update_caption") {
+    const caption=String(body.caption||"").trim();if(!caption)return NextResponse.json({error:"Caption cannot be empty."},{status:400});
+    const {data:variation}=await ctx.supabase.from("campaign_variations").select("content").eq("id",variationId).eq("campaign_id",campaignId).single();
+    const {error}=await ctx.supabase.from("campaign_variations").update({content:{...(variation?.content||{}),caption}}).eq("id",variationId).eq("campaign_id",campaignId);
+    if(error)return NextResponse.json({error:error.message},{status:400});
+    await ctx.supabase.from("campaigns").update({status:"ready_for_review",scheduled_for:null,publishing_error:null}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
+    return NextResponse.json({status:"ready_for_review"});
   }
   return NextResponse.json({ error: "Unsupported publishing action." }, { status: 400 });
 }
