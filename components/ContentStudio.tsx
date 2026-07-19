@@ -11,6 +11,7 @@ import VisualConceptPicker from "./VisualConceptPicker";
 import MetaPublishingPanel from "./MetaPublishingPanel";
 import PublishingApprovalPanel from "./PublishingApprovalPanel";
 import ContentReviewQueue from "./ContentReviewQueue";
+import PerformanceIntelligence from "./PerformanceIntelligence";
 import type { BrandProfile, CampaignCopy, ProductData, VisualStyle } from "@/lib/types";
 
 type ApiResult={product:ProductData;campaign:CampaignCopy;imageUrl:string;imageUrls?:string[];replacements?:{index:number;imageUrl:string}[];error?:string};
@@ -46,6 +47,7 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
     <ShopifyAutomation/>
     <MetaPublishingPanel/>
     <ContentReviewQueue/>
+    <PerformanceIntelligence/>
     <ShopifyProductPicker selectedHandle={product?.handle} onSelect={selected=>{setProduct(selected);setUrl(selected.url);setCampaign(null);setStatus(`Selected ${selected.title}. Campaign settings are ready below.`);setError("");window.setTimeout(()=>document.getElementById("campaign-settings")?.scrollIntoView({behavior:"smooth",block:"start"}),100);}}/>
     <CreativeAgentStudio product={product}/>
     <section className="panel form-panel" id="campaign-settings"><div className="field"><label>SHOPIFY PRODUCT LINK</label><input value={url} onChange={e=>{setUrl(e.target.value);setImported(false)}}/></div><div className="actions"><button type="button" className={`primary ${imported?"action-confirmed":""}`} onClick={imp} disabled={loading||importing} aria-busy={importing}><ShoppingBag size={17}/>{importing?"Importing…":imported?"Imported ✓":"Import Product"}</button></div>

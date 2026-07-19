@@ -21,7 +21,7 @@ export async function GET(request:NextRequest){
     const supabase=await createSupabaseServerClient(),{data:{user}}=await supabase.auth.getUser();if(!user)throw new Error("Your studio session expired.");
     const {data:membership}=await supabase.from("organization_members").select("organization_id,role").eq("user_id",user.id).limit(1).single();
     if(!membership||!["owner","admin"].includes(membership.role))throw new Error("Owner or admin access is required.");
-    const {error}=await supabase.from("social_connections").upsert({organization_id:membership.organization_id,provider:"instagram",provider_account_id:String(profile.user_id||profile.id||token.user_id),account_name:profile.username||profile.name||"Instagram",encrypted_access_token:encryptToken(accessToken),token_expires_at:expiresAt,scopes:["instagram_business_basic","instagram_business_content_publish"],status:"active",connected_by:user.id},{onConflict:"organization_id,provider,provider_account_id"});
+    const {error}=await supabase.from("social_connections").upsert({organization_id:membership.organization_id,provider:"instagram",provider_account_id:String(profile.user_id||profile.id||token.user_id),account_name:profile.username||profile.name||"Instagram",encrypted_access_token:encryptToken(accessToken),token_expires_at:expiresAt,scopes:["instagram_business_basic","instagram_business_content_publish","instagram_business_manage_insights"],status:"active",connected_by:user.id},{onConflict:"organization_id,provider,provider_account_id"});
     if(error)throw error;const response=done("meta","connected");response.cookies.delete("instagram_oauth_state");return response;
   }catch(error){return done("meta_error",error instanceof Error?error.message:"Instagram connection failed.")}
 }
