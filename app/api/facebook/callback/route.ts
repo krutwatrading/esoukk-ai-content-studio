@@ -26,12 +26,18 @@ export async function GET(request:NextRequest){
     const pagesResponse=await fetch(`https://graph.facebook.com/v25.0/me/accounts?${new URLSearchParams({fields:"id,name,access_token,tasks",limit:"100",access_token:userToken})}`,{cache:"no-store"}),pagesPayload=await pagesResponse.json();
     if(!pagesResponse.ok)throw new Error(pagesPayload.error?.message||"Unable to read Facebook Pages.");
     const pages=(Array.isArray(pagesPayload.data)?pagesPayload.data:[]) as FacebookPage[];
+    const configuredPageId=process.env.FACEBOOK_PAGE_ID?.trim()||"248613811675766";
+    if(!pages.some(page=>page.id===configuredPageId&&page.access_token)){
+      const pageResponse=await fetch(`https://graph.facebook.com/v25.0/${encodeURIComponent(configuredPageId)}?${new URLSearchParams({fields:"id,name,access_token,tasks",access_token:userToken})}`,{cache:"no-store"});
+      const pagePayload=await pageResponse.json();
+      if(pageResponse.ok&&pagePayload?.id&&pagePayload?.access_token)pages.push(pagePayload as FacebookPage);
+    }
     // Meta returns different `tasks` labels for classic Pages and the New Pages
     // Experience (for example PROFILE_PLUS_FULL_CONTROL). A Page access token is
     // the authoritative signal here; pages_manage_posts is validated by Meta
     // again when content is published.
     const eligible=pages.filter(page=>page.id&&page.access_token);
-    if(!eligible.length)throw new Error("No Facebook Page access token was returned. Reconnect and grant access to the eSoukk Page.");
+    if(!eligible.length)throw new Error("Meta approved the eSoukk Page but did not issue its Page access token. Remove the existing eSoukk AI Content Studio entry from Facebook Business Integrations, then reconnect it.");
     const preferred=eligible.find(page=>String(page.name||"").toLowerCase().includes("esoukk"))||eligible[0];
     const supabase=await createSupabaseServerClient(),{data:{user}}=await supabase.auth.getUser();
     if(!user)throw new Error("Your studio session expired.");
