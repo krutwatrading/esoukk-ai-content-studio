@@ -26,8 +26,12 @@ export async function GET(request:NextRequest){
     const pagesResponse=await fetch(`https://graph.facebook.com/v25.0/me/accounts?${new URLSearchParams({fields:"id,name,access_token,tasks",limit:"100",access_token:userToken})}`,{cache:"no-store"}),pagesPayload=await pagesResponse.json();
     if(!pagesResponse.ok)throw new Error(pagesPayload.error?.message||"Unable to read Facebook Pages.");
     const pages=(Array.isArray(pagesPayload.data)?pagesPayload.data:[]) as FacebookPage[];
-    const eligible=pages.filter(page=>page.id&&page.access_token&&(!page.tasks||page.tasks.includes("CREATE_CONTENT")||page.tasks.includes("MANAGE")));
-    if(!eligible.length)throw new Error("No Facebook Page with content publishing access was found for this account.");
+    // Meta returns different `tasks` labels for classic Pages and the New Pages
+    // Experience (for example PROFILE_PLUS_FULL_CONTROL). A Page access token is
+    // the authoritative signal here; pages_manage_posts is validated by Meta
+    // again when content is published.
+    const eligible=pages.filter(page=>page.id&&page.access_token);
+    if(!eligible.length)throw new Error("No Facebook Page access token was returned. Reconnect and grant access to the eSoukk Page.");
     const preferred=eligible.find(page=>String(page.name||"").toLowerCase().includes("esoukk"))||eligible[0];
     const supabase=await createSupabaseServerClient(),{data:{user}}=await supabase.auth.getUser();
     if(!user)throw new Error("Your studio session expired.");
