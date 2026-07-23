@@ -40,6 +40,7 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
     ["Pinterest",`${campaign.pinterestTitle}\n\n${campaign.pinterestDescription}\n\n${campaign.pinterestHashtags.join(" ")}`],
     ["X (Twitter)",campaign.xPost],["LinkedIn",campaign.linkedinPost],
     ["TikTok",`${campaign.tiktokCaption}\n\n${campaign.tiktokHashtags.join(" ")}`],
+    ["WhatsApp Marketing",`Template: ${campaign.whatsappTemplateName||`esoukk_${goal}_${product?.handle||"product"}`}\nHeader: ${campaign.whatsappHeader||product?.title||""}\n\n${campaign.whatsappBody||`Hi {{1}}, discover ${product?.title||"our latest edit"} at eSoukk.`}\n\nCTA: ${campaign.whatsappCta||"VIEW PRODUCT"}\n\nCompliance: ${campaign.whatsappOptInNote||"Send only to contacts with explicit WhatsApp marketing opt-in and honour opt-outs."}`],
     ["Email",`${campaign.emailSubject}\n${campaign.emailPreview}\n\n${campaign.emailBody}`]
   ] : [];
 

@@ -2,7 +2,7 @@ export type ProductData={title:string;handle:string;url:string;vendor?:string;pr
 export type BrandProfile={storeName:string;websiteUrl:string;voice:string[];audiences:string[];approvedCtas:string[];prohibitedClaims:string[]};
 export type VisualStyle="luxury"|"minimal"|"studio"|"summer"|"uae-lifestyle"|"gym"|"casual"|"resort"|"premium-black"|"editorial";
 export type CampaignRequest={product:ProductData;goal:"new-arrival"|"sales"|"awareness"|"engagement";language:"English"|"Arabic"|"Bilingual";style:VisualStyle;offer?:string;audience?:string;brandProfile?:BrandProfile};
-export type CampaignCopy={campaignAngle:string;headline:string;subheadline:string;cta:string;instagramCaption:string;instagramHashtags:string[];facebookCaption:string;facebookHashtags:string[];storyFrames:string[];pinterestTitle:string;pinterestDescription:string;pinterestHashtags:string[];xPost:string;linkedinPost:string;tiktokCaption:string;tiktokHashtags:string[];reelHook:string;reelScript:string[];emailSubject:string;emailPreview:string;emailBody:string;hashtags:string[];seoTitle:string;metaDescription:string;complianceNotes:string[]};
+export type CampaignCopy={campaignAngle:string;headline:string;subheadline:string;cta:string;instagramCaption:string;instagramHashtags:string[];facebookCaption:string;facebookHashtags:string[];storyFrames:string[];pinterestTitle:string;pinterestDescription:string;pinterestHashtags:string[];xPost:string;linkedinPost:string;tiktokCaption:string;tiktokHashtags:string[];whatsappTemplateName?:string;whatsappHeader?:string;whatsappBody?:string;whatsappCta?:string;whatsappOptInNote?:string;reelHook:string;reelScript:string[];emailSubject:string;emailPreview:string;emailBody:string;hashtags:string[];seoTitle:string;metaDescription:string;complianceNotes:string[]};
 
 
 export type CreativePlatform =
@@ -14,7 +14,8 @@ export type CreativePlatform =
   | "tiktok"
   | "youtube-shorts"
   | "pinterest"
-  | "snapchat";
+  | "snapchat"
+  | "whatsapp";
 
 export type CreativeBrief = {
   product: ProductData;

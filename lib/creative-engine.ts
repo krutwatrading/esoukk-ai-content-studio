@@ -9,7 +9,8 @@ const PLATFORM_SPECS = {
   "tiktok": { aspectRatio: "9:16", resolution: "1080×1920", durationSeconds: 20 },
   "youtube-shorts": { aspectRatio: "9:16", resolution: "1080×1920", durationSeconds: 25 },
   "pinterest": { aspectRatio: "2:3", resolution: "1000×1500", durationSeconds: 15 },
-  "snapchat": { aspectRatio: "9:16", resolution: "1080×1920", durationSeconds: 10 }
+  "snapchat": { aspectRatio: "9:16", resolution: "1080×1920", durationSeconds: 10 },
+  "whatsapp": { aspectRatio: "1:1", resolution: "1080×1080", durationSeconds: 15 }
 } as const;
 
 const clean = (value?: string) => (value || "").replace(/\s+/g, " ").trim();

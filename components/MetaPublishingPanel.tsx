@@ -1,17 +1,18 @@
 "use client";
 
 import {useEffect,useState,type ReactNode} from "react";
-import {Facebook,Ghost,Instagram,Music2,Search,ShieldCheck,Unplug,Youtube} from "lucide-react";
+import {Facebook,Ghost,Instagram,MessageCircle,Music2,Search,ShieldCheck,Unplug,Youtube} from "lucide-react";
 
 type Channel={id:string;name:string;configured:boolean;connected:boolean;accountName:string|null;callbackUrl:string;keys:string[]};
 type Status={channels:Channel[]};
 
-const icons:Record<string,ReactNode>={instagram:<Instagram/>,facebook:<Facebook/>,tiktok:<Music2/>,google:<><Search/><Youtube/></>,snapchat:<Ghost/>};
-const connectPath:Record<string,string>={instagram:"/api/meta/connect",facebook:"/api/facebook/connect",tiktok:"/api/tiktok/connect"};
+const icons:Record<string,ReactNode>={instagram:<Instagram/>,facebook:<Facebook/>,tiktok:<Music2/>,google:<><Search/><Youtube/></>,snapchat:<Ghost/>,whatsapp:<MessageCircle/>};
+const connectPath:Record<string,string>={instagram:"/api/meta/connect",facebook:"/api/facebook/connect",tiktok:"/api/tiktok/connect",whatsapp:"/api/whatsapp/connect"};
 
 function setupNote(channelId:string){
   if(channelId==="tiktok")return "Login Kit uses user.info.basic while Production review is pending.";
   if(channelId==="facebook")return "Enable Facebook Login for Business with pages_show_list, pages_read_engagement and pages_manage_posts.";
+  if(channelId==="whatsapp")return "Use a permanent system-user token. Marketing sends are restricted to opted-in contacts and approved WhatsApp templates.";
   return "The official OAuth and publishing endpoint will be activated after credentials are supplied.";
 }
 
@@ -21,7 +22,7 @@ export default function MetaPublishingPanel(){
   function openQueue(){document.getElementById("content-review-queue")?.scrollIntoView({behavior:"smooth",block:"start"})}
   const channels=Array.isArray(data?.channels)?data.channels:[];
   return <section className="panel meta-panel channel-hub" id="meta-publishing">
-    <div className="meta-heading"><div><div className="eyebrow">PHASE 4 · OMNICHANNEL PUBLISHING</div><h2>Connect, approve and publish everywhere</h2><p>One approval-first control centre for Instagram, Facebook, TikTok, Google/YouTube and Snapchat.</p></div><span className="readiness ready"><ShieldCheck size={16}/>{channels.filter(item=>item.connected).length} connected</span></div>
+    <div className="meta-heading"><div><div className="eyebrow">PHASE 4 · OMNICHANNEL PUBLISHING</div><h2>Connect, approve and publish everywhere</h2><p>One approval-first control centre for Instagram, Facebook, TikTok, WhatsApp, Google/YouTube and Snapchat.</p></div><span className="readiness ready"><ShieldCheck size={16}/>{channels.filter(item=>item.connected).length} connected</span></div>
     <div className="channel-grid">{channels.map(channel=><article key={channel.id} className={`channel-card ${channel.connected?"connected":channel.configured?"configured":"setup"}`}>
       <header><div className="channel-icon">{icons[channel.id]}</div><span className="channel-state">{channel.connected?"Connected":channel.configured?"Credentials ready":"Setup required"}</span></header>
       <h3>{channel.name}</h3>
