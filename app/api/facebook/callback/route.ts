@@ -27,6 +27,12 @@ export async function GET(request:NextRequest){
     if(!pagesResponse.ok)throw new Error(pagesPayload.error?.message||"Unable to read Facebook Pages.");
     const pages=(Array.isArray(pagesPayload.data)?pagesPayload.data:[]) as FacebookPage[];
     const configuredPageId=process.env.FACEBOOK_PAGE_ID?.trim()||"248613811675766";
+    const configuredBusinessId=process.env.FACEBOOK_BUSINESS_ID?.trim()||"379816178202668";
+    if(!pages.some(page=>page.id===configuredPageId&&page.access_token)){
+      const businessPagesResponse=await fetch(`https://graph.facebook.com/v25.0/${encodeURIComponent(configuredBusinessId)}/owned_pages?${new URLSearchParams({fields:"id,name,access_token,tasks",limit:"100",access_token:userToken})}`,{cache:"no-store"});
+      const businessPagesPayload=await businessPagesResponse.json();
+      if(businessPagesResponse.ok&&Array.isArray(businessPagesPayload.data))pages.push(...businessPagesPayload.data as FacebookPage[]);
+    }
     if(!pages.some(page=>page.id===configuredPageId&&page.access_token)){
       const pageResponse=await fetch(`https://graph.facebook.com/v25.0/${encodeURIComponent(configuredPageId)}?${new URLSearchParams({fields:"id,name,access_token,tasks",access_token:userToken})}`,{cache:"no-store"});
       const pagePayload=await pageResponse.json();
@@ -43,7 +49,7 @@ export async function GET(request:NextRequest){
     if(!user)throw new Error("Your studio session expired.");
     const{data:membership}=await supabase.from("organization_members").select("organization_id,role").eq("user_id",user.id).limit(1).single();
     if(!membership||!["owner","admin"].includes(membership.role))throw new Error("Owner or admin access is required.");
-    const{error}=await supabase.from("social_connections").upsert({organization_id:membership.organization_id,provider:"facebook",provider_account_id:String(preferred.id),account_name:preferred.name||"Facebook Page",encrypted_access_token:encryptToken(String(preferred.access_token)),token_expires_at:expiresAt,scopes:["pages_show_list","pages_read_engagement","pages_manage_posts"],status:"active",connected_by:user.id},{onConflict:"organization_id,provider,provider_account_id"});
+    const{error}=await supabase.from("social_connections").upsert({organization_id:membership.organization_id,provider:"facebook",provider_account_id:String(preferred.id),account_name:preferred.name||"Facebook Page",encrypted_access_token:encryptToken(String(preferred.access_token)),token_expires_at:expiresAt,scopes:["pages_show_list","pages_read_engagement","pages_manage_posts","business_management"],status:"active",connected_by:user.id},{onConflict:"organization_id,provider,provider_account_id"});
     if(error)throw error;
     const response=done("facebook","connected");response.cookies.delete("facebook_oauth_state");return response;
   }catch(error){return done("facebook_error",error instanceof Error?error.message:"Facebook connection failed.")}
