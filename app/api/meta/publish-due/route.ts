@@ -30,8 +30,33 @@ async function run(request: NextRequest) {
     try {
       const { data: approval } = await admin.from("approvals").select("variation_id").eq("campaign_id",campaign.id).eq("decision","approved").order("created_at",{ascending:false}).limit(1).maybeSingle();
       if (!approval) throw new Error("No recorded approval was found.");
-      const { data: variation } = await admin.from("campaign_variations").select("content").eq("id",approval.variation_id).single();
-      const { data: connection } = await admin.from("social_connections").select("provider_account_id,encrypted_access_token").eq("organization_id",campaign.organization_id).eq("provider","instagram").eq("status","active").limit(1).single();
+      const { data: variation } = await admin.from("campaign_variations").select("content,platform").eq("id",approval.variation_id).single();
+      const platform=campaign.settings?.platform==="whatsapp"?"whatsapp":"instagram";
+      const { data: connection } = await admin.from("social_connections").select("provider_account_id,encrypted_access_token").eq("organization_id",campaign.organization_id).eq("provider",platform).eq("status","active").limit(1).single();
+      if(platform==="whatsapp"){
+        const templateName=String(variation?.content?.template_name||""),language=String(variation?.content?.template_language||"en"),imageUrl=String(variation?.content?.image_url||campaign.settings?.image_url||"");
+        if(!templateName||!connection)throw new Error("Approved WhatsApp template or active WhatsApp connection is missing.");
+        const {data:contacts,error:contactsError}=await admin.from("whatsapp_contacts").select("id,phone_e164,display_name").eq("organization_id",campaign.organization_id).eq("marketing_opt_in",true).is("opted_out_at",null);
+        if(contactsError)throw new Error(contactsError.message);
+        if(!contacts?.length)throw new Error("No contacts with explicit WhatsApp marketing opt-in are available.");
+        const accessToken=decryptToken(connection.encrypted_access_token),phoneId=connection.provider_account_id;
+        const successes:Array<{contactId:string;messageId:string}>=[],failures:Array<{contactId:string;error:string}>=[];
+        for(const contact of contacts){
+          const components:Array<Record<string,unknown>>=[];
+          if(imageUrl)components.push({type:"header",parameters:[{type:"image",image:{link:imageUrl}}]});
+          components.push({type:"body",parameters:[{type:"text",text:contact.display_name||"there"}]});
+          const response=await fetch(`https://graph.facebook.com/v25.0/${phoneId}/messages`,{method:"POST",headers:{Authorization:`Bearer ${accessToken}`,"Content-Type":"application/json"},body:JSON.stringify({messaging_product:"whatsapp",to:contact.phone_e164,type:"template",template:{name:templateName,language:{code:language},components}})});
+          const data=await response.json();
+          if(response.ok&&data.messages?.[0]?.id)successes.push({contactId:contact.id,messageId:data.messages[0].id});
+          else failures.push({contactId:contact.id,error:data.error?.message||"WhatsApp send failed."});
+        }
+        if(!successes.length)throw new Error(failures[0]?.error||"WhatsApp campaign failed for every opted-in contact.");
+        const status=failures.length?"partially_failed":"published",firstMessage=successes[0].messageId,errorMessage=failures.length?`${failures.length} of ${contacts.length} opted-in recipients failed.`:null;
+        await admin.from("campaigns").update({status,published_at:new Date().toISOString(),external_post_id:firstMessage,external_post_url:null,publishing_error:errorMessage}).eq("id",campaign.id);
+        await admin.from("audit_logs").insert({organization_id:campaign.organization_id,actor_id:context.actorId||null,action:"whatsapp.published",object_type:"campaign",object_id:campaign.id,metadata:{template_name:templateName,recipient_count:contacts.length,successful:successes.length,failed:failures.length}});
+        results.push({campaignId:campaign.id,status,error:errorMessage||undefined});
+        continue;
+      }
       const caption=String(variation?.content?.caption||""),imageUrl=String(variation?.content?.image_url||campaign.settings?.image_url||"");
       if(!caption||!imageUrl||!connection)throw new Error("Approved caption, public image or Instagram connection is missing.");
       const accessToken=decryptToken(connection.encrypted_access_token),accountId=connection.provider_account_id;
@@ -44,7 +69,7 @@ async function run(request: NextRequest) {
       await admin.from("audit_logs").insert({organization_id:campaign.organization_id,actor_id:context.actorId||null,action:"instagram.published",object_type:"campaign",object_id:campaign.id,metadata:{instagram_media_id:published.id,permalink:postUrl}});
       results.push({campaignId:campaign.id,status:"published",postUrl:postUrl||undefined});
     } catch(error) {
-      const message=error instanceof Error?error.message:"Instagram publishing failed.";
+      const message=error instanceof Error?error.message:"Campaign publishing failed.";
       await admin.from("campaigns").update({status:"partially_failed",publishing_error:message}).eq("id",campaign.id);
       results.push({campaignId:campaign.id,status:"failed",error:message});
     }

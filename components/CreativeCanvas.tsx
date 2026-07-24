@@ -47,9 +47,10 @@ type Props = {
   background?: string;
   style: VisualStyle;
   onSelectForPublishing?: (dataUrl: string) => void;
+  publishingLabel?: string;
 };
 
-export default function CreativeCanvas({ label, width, height, product, campaign, background, style, onSelectForPublishing }: Props) {
+export default function CreativeCanvas({ label, width, height, product, campaign, background, style, onSelectForPublishing, publishingLabel }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -145,5 +146,5 @@ export default function CreativeCanvas({ label, width, height, product, campaign
   };
   const select = () => { if (ref.current && onSelectForPublishing) onSelectForPublishing(ref.current.toDataURL("image/png")); };
 
-  return <div className="creative-card"><canvas ref={ref}/><div className="creative-tools"><strong>{label} · {style.replace("-", " ")} · {width}×{height}</strong><div><a className="creative-cta-preview" href={product.url} target="_blank" rel="noreferrer">{campaign.cta} ↗</a>{onSelectForPublishing&&<button type="button" className="select-publish-creative" onClick={select}>Use for Instagram</button>}<button type="button" onClick={download}>Download PNG</button></div></div><small className="canvas-note">{background ? "Complete AI campaign photograph fitted without cropping. Verify product fidelity before approval." : "Original Shopify image shown. Generate a new AI campaign image for a new scene."}</small></div>;
+  return <div className="creative-card"><canvas ref={ref}/><div className="creative-tools"><strong>{label} · {style.replace("-", " ")} · {width}×{height}</strong><div><a className="creative-cta-preview" href={product.url} target="_blank" rel="noreferrer">{campaign.cta} ↗</a>{onSelectForPublishing&&<button type="button" className="select-publish-creative" onClick={select}>{publishingLabel||"Use for Publishing"}</button>}<button type="button" onClick={download}>Download PNG</button></div></div><small className="canvas-note">{background ? "Complete AI campaign photograph fitted without cropping. Verify product fidelity before approval." : "Original Shopify image shown. Generate a new AI campaign image for a new scene."}</small></div>;
 }
