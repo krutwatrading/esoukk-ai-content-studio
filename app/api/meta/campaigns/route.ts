@@ -70,8 +70,10 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({status:"changes_requested"});
   }
   if (body.action === "retry") {
-    const {data:campaign}=await ctx.supabase.from("campaigns").select("settings").eq("id",campaignId).eq("organization_id",ctx.membership.organization_id).single();
-    if(campaign?.settings?.platform==="whatsapp")return NextResponse.json({error:"WhatsApp partial campaigns cannot be retried automatically because successful recipients must not receive duplicates."},{status:409});
+    const {data:campaign}=await ctx.supabase.from("campaigns").select("settings,publishing_error").eq("id",campaignId).eq("organization_id",ctx.membership.organization_id).single();
+    const isWhatsApp=campaign?.settings?.platform==="whatsapp";
+    const isPreSendSetupFailure=isWhatsApp&&String(campaign?.publishing_error||"").includes("whatsapp_contacts");
+    if(isWhatsApp&&!isPreSendSetupFailure)return NextResponse.json({error:"WhatsApp partial campaigns cannot be retried automatically because successful recipients must not receive duplicates."},{status:409});
     const {error}=await ctx.supabase.from("campaigns").update({status:"scheduled",scheduled_for:new Date(Date.now()-1000).toISOString(),publishing_error:null,external_post_id:null,external_post_url:null}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
     if(error)return NextResponse.json({error:error.message},{status:400});
     return NextResponse.json({status:"scheduled"});
