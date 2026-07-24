@@ -8,8 +8,9 @@ type Draft={id:string;variationId:string};
 type State="editing"|"saving"|"review"|"approving"|"approved"|"scheduling"|"scheduled";
 
 export default function WhatsAppApprovalPanel({product,campaign,publishImage}:{product:ProductData;campaign:CampaignCopy;publishImage?:string}){
-  const productUrl=product.url;
-  const initialBody=campaign.whatsappBody?.includes(productUrl)?campaign.whatsappBody:`${campaign.whatsappBody||""}\n\nShop now: ${productUrl}`.trim();
+  const productUrl=typeof product.url==="string"?product.url:"";
+  const generatedBody=typeof campaign.whatsappBody==="string"?campaign.whatsappBody:"";
+  const initialBody=productUrl&&generatedBody.includes(productUrl)?generatedBody:`${generatedBody}${productUrl?`\n\nShop now: ${productUrl}`:""}`.trim();
   const[templateName,setTemplateName]=useState(campaign.whatsappTemplateName||"");
   const[language,setLanguage]=useState("en");
   const[body,setBody]=useState(initialBody);
