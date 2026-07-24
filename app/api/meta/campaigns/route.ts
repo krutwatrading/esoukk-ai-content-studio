@@ -69,6 +69,13 @@ export async function PATCH(request: NextRequest) {
     await ctx.supabase.from("campaigns").update({status:"changes_requested",scheduled_for:null}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
     return NextResponse.json({status:"changes_requested"});
   }
+  if (body.action === "retry") {
+    const {data:campaign}=await ctx.supabase.from("campaigns").select("settings").eq("id",campaignId).eq("organization_id",ctx.membership.organization_id).single();
+    if(campaign?.settings?.platform==="whatsapp")return NextResponse.json({error:"WhatsApp partial campaigns cannot be retried automatically because successful recipients must not receive duplicates."},{status:409});
+    const {error}=await ctx.supabase.from("campaigns").update({status:"scheduled",scheduled_for:new Date(Date.now()-1000).toISOString(),publishing_error:null,external_post_id:null,external_post_url:null}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
+    if(error)return NextResponse.json({error:error.message},{status:400});
+    return NextResponse.json({status:"scheduled"});
+  }
   if (body.action === "update_caption") {
     const caption=String(body.caption||"").trim();if(!caption)return NextResponse.json({error:"Content cannot be empty."},{status:400});
     const {data:variation}=await ctx.supabase.from("campaign_variations").select("content,platform").eq("id",variationId).eq("campaign_id",campaignId).single();

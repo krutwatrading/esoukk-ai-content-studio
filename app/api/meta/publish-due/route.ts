@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { decryptToken } from "@/lib/token-crypto";
 
 type Context = { organizationId?: string; actorId?: string };
+const wait=(milliseconds:number)=>new Promise(resolve=>setTimeout(resolve,milliseconds));
 async function authorize(request: NextRequest): Promise<Context | null> {
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && request.headers.get("authorization") === `Bearer ${cronSecret}`) return {};
@@ -62,6 +63,15 @@ async function run(request: NextRequest) {
       const accessToken=decryptToken(connection.encrypted_access_token),accountId=connection.provider_account_id;
       const createResponse=await fetch(`https://graph.instagram.com/v25.0/${accountId}/media`,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({image_url:imageUrl,caption,access_token:accessToken})});
       const container=await createResponse.json();if(!createResponse.ok||!container.id)throw new Error(container.error?.message||"Instagram media container creation failed.");
+      let ready=false;
+      for(let attempt=0;attempt<12;attempt++){
+        const statusResponse=await fetch(`https://graph.instagram.com/v25.0/${container.id}?fields=status_code,status&access_token=${encodeURIComponent(accessToken)}`),statusData=await statusResponse.json();
+        if(!statusResponse.ok)throw new Error(statusData.error?.message||"Instagram media processing status could not be checked.");
+        if(statusData.status_code==="FINISHED"){ready=true;break}
+        if(statusData.status_code==="ERROR"||statusData.status_code==="EXPIRED")throw new Error(statusData.status||`Instagram media processing ${String(statusData.status_code).toLowerCase()}.`);
+        await wait(1500);
+      }
+      if(!ready)throw new Error("Instagram is still processing this image. Use Retry publishing in a moment.");
       const publishResponse=await fetch(`https://graph.instagram.com/v25.0/${accountId}/media_publish`,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({creation_id:container.id,access_token:accessToken})});
       const published=await publishResponse.json();if(!publishResponse.ok||!published.id)throw new Error(published.error?.message||"Instagram publishing failed.");
       const permalinkResponse=await fetch(`https://graph.instagram.com/v25.0/${published.id}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`),permalinkData=await permalinkResponse.json(),postUrl=permalinkData.permalink||null;
