@@ -62,17 +62,18 @@ export default function CreativeCanvas({ label, width, height, product, campaign
 
     (async () => {
       const theme = themes[style];
+      const panelTop = height * (height / width <= 1.12 ? .50 : .62);
       context.fillStyle = theme.bg;
       context.fillRect(0, 0, width, height);
       const visual = await loadImage(background || product.images[0] || "");
       if (visual.naturalWidth) {
         if (background) {
-          const imageAreaHeight = height * .62;
+          const imageAreaHeight = panelTop;
           const scale = Math.min(width * .96 / visual.naturalWidth, imageAreaHeight * .96 / visual.naturalHeight);
           const drawWidth = visual.naturalWidth * scale, drawHeight = visual.naturalHeight * scale;
           context.drawImage(visual, (width - drawWidth) / 2, (imageAreaHeight - drawHeight) / 2, drawWidth, drawHeight);
         } else {
-          const imageAreaHeight = height * .57;
+          const imageAreaHeight = panelTop * .92;
           const scale = Math.min(width * .82 / visual.naturalWidth, imageAreaHeight / visual.naturalHeight);
           const drawWidth = visual.naturalWidth * scale, drawHeight = visual.naturalHeight * scale;
           context.shadowColor = "rgba(10,10,10,.2)";
@@ -83,25 +84,47 @@ export default function CreativeCanvas({ label, width, height, product, campaign
       }
 
       context.fillStyle = theme.panel;
-      context.fillRect(0, height * .62, width, height * .38);
-      const padding = width * .07, textY = height * .70;
+      context.fillRect(0, panelTop, width, height - panelTop);
+      const padding = width * .07;
       const rtl = isArabic(campaign.headline + campaign.subheadline), textX = rtl ? width - padding : padding;
       context.direction = rtl ? "rtl" : "ltr";
       context.textAlign = rtl ? "right" : "left";
       const logo = await loadImage("/brand/kavia-logo.png");
+      let logoBottom = panelTop + padding * .45;
       if (logo.naturalWidth) {
-        const logoWidth = width * .27, logoHeight = logoWidth * logo.naturalHeight / logo.naturalWidth;
-        context.drawImage(logo, rtl ? width - padding - logoWidth : padding, textY - logoHeight - width * .018, logoWidth, logoHeight);
+        const logoWidth = width * .25, logoHeight = logoWidth * logo.naturalHeight / logo.naturalWidth;
+        const logoY = panelTop + padding * .28;
+        context.drawImage(logo, rtl ? width - padding - logoWidth : padding, logoY, logoWidth, logoHeight);
+        logoBottom = logoY + logoHeight;
+      }
+      const buttonHeight = width * .075, buttonWidth = width * .31;
+      const buttonY = height - padding - buttonHeight;
+      const subFontSize = Math.max(18, width * .026), subLineHeight = subFontSize * 1.32;
+      context.font = `500 ${subFontSize}px Arial`;
+      const subLines = wrap(context, campaign.subheadline, width - padding * 2);
+      const visibleSubLines = subLines.slice(0, 2);
+      const headlineTop = logoBottom + width * .045;
+      const textBottom = buttonY - width * .035;
+      const headlineSpace = Math.max(20, textBottom - headlineTop - visibleSubLines.length * subLineHeight - width * .025);
+      let headlineFontSize = Math.min(width * .057, height * .046), headlineLines: string[] = [], headlineLineHeight = 0;
+      do {
+        context.font = `700 ${headlineFontSize}px ${rtl ? "Arial" : "Georgia"}`;
+        headlineLines = wrap(context, campaign.headline.toUpperCase(), width - padding * 2);
+        headlineLineHeight = headlineFontSize * 1.08;
+        if (headlineLines.length * headlineLineHeight <= headlineSpace || headlineFontSize <= width * .026) break;
+        headlineFontSize -= 2;
+      } while (headlineFontSize > 0);
+      const maximumHeadlineLines = Math.max(1, Math.floor(headlineSpace / headlineLineHeight));
+      if (headlineLines.length > maximumHeadlineLines) {
+        headlineLines = headlineLines.slice(0, maximumHeadlineLines);
+        headlineLines[headlineLines.length - 1] = `${headlineLines[headlineLines.length - 1].replace(/[.,;:!?—-]+$/, "")}…`;
       }
       context.fillStyle = theme.text;
-      context.font = `700 ${width * .057}px ${rtl ? "Arial" : "Georgia"}`;
-      const headlineLines = wrap(context, campaign.headline.toUpperCase(), width - padding * 2);
-      headlineLines.forEach((line, index) => context.fillText(line, textX, textY + width * .075 + index * width * .063));
-      context.font = `500 ${width * .026}px Arial`;
-      const subLines = wrap(context, campaign.subheadline, width - padding * 2);
-      const subY = textY + width * .075 + headlineLines.length * width * .063 + width * .02;
-      subLines.slice(0, 2).forEach((line, index) => context.fillText(line, textX, subY + index * width * .035));
-      const buttonWidth = width * .31, buttonY = Math.min(height - width * .12, subY + subLines.length * width * .035 + width * .04);
+      context.font = `700 ${headlineFontSize}px ${rtl ? "Arial" : "Georgia"}`;
+      headlineLines.forEach((line, index) => context.fillText(line, textX, headlineTop + headlineFontSize + index * headlineLineHeight));
+      const subY = headlineTop + headlineLines.length * headlineLineHeight + width * .025;
+      context.font = `500 ${subFontSize}px Arial`;
+      visibleSubLines.forEach((line, index) => context.fillText(line, textX, subY + subFontSize + index * subLineHeight));
       const buttonX = rtl ? width - padding - buttonWidth : padding;
       context.fillStyle = theme.accent;
       context.beginPath();
