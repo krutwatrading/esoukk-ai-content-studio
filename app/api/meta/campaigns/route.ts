@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   const { data: campaign, error: campaignError } = await ctx.supabase.from("campaigns").insert({ organization_id: ctx.membership.organization_id, name: `${label} · ${String(product.title)}`, status: "ready_for_review", settings: { platform, timezone: "Asia/Dubai", image_url: imageUrl }, product_snapshot: product, created_by: ctx.user.id }).select("id,status,scheduled_for").single();
   if (campaignError) return NextResponse.json({ error: campaignError.message }, { status: 400 });
   const content = platform === "whatsapp"
-    ? { template_name: templateName, template_language: templateLanguage, body: messageBody, image_url: imageUrl, cta: String(body.cta || "") }
+    ? { template_name: templateName, template_language: templateLanguage, body: messageBody, image_url: imageUrl, cta: String(body.cta || "BUY NOW"), cta_label: String(body.cta || "BUY NOW"), product_url: String(body.productUrl || product.url || "") }
     : { caption, image_url: imageUrl };
   const { data: variation, error: variationError } = await ctx.supabase.from("campaign_variations").insert({ organization_id: ctx.membership.organization_id, campaign_id: campaign.id, platform, variation_number: 1, content, created_by: ctx.user.id }).select("id").single();
   if (variationError) return NextResponse.json({ error: variationError.message }, { status: 400 });

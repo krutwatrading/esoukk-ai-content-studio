@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { CalendarClock, CheckCircle2, ExternalLink, RefreshCw, Send, XCircle } from "lucide-react";
-type Item={id:string;name:string;status:string;scheduled_for:string|null;published_at:string|null;publishing_error:string|null;external_post_url:string|null;publish_attempts:number;product_snapshot:{title?:string};settings:{image_url?:string;platform?:string};variation:{id:string;platform:string;content:{caption?:string;body?:string;image_url?:string;template_name?:string}}|null};
+type Item={id:string;name:string;status:string;scheduled_for:string|null;published_at:string|null;publishing_error:string|null;external_post_url:string|null;publish_attempts:number;product_snapshot:{title?:string};settings:{image_url?:string;platform?:string};variation:{id:string;platform:string;content:{caption?:string;body?:string;image_url?:string;template_name?:string;cta_label?:string;product_url?:string}}|null};
 export default function ContentReviewQueue(){
   const[items,setItems]=useState<Item[]>([]),[loading,setLoading]=useState(true),[busy,setBusy]=useState(""),[message,setMessage]=useState("");
   const load=useCallback(async()=>{try{const response=await fetch("/api/meta/campaigns",{cache:"no-store"}),data=await response.json();if(!response.ok)throw new Error(data.error);setItems(data.campaigns||[])}catch(error){setMessage(error instanceof Error?error.message:"Unable to load review queue.")}finally{setLoading(false)}},[]);

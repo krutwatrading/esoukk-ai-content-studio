@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, CheckCircle2, Save } from "lucide-react";
+import { CalendarClock, CheckCircle2, ExternalLink, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CampaignCopy, ProductData } from "@/lib/types";
 
@@ -8,9 +8,11 @@ type Draft={id:string;variationId:string};
 type State="editing"|"saving"|"review"|"approving"|"approved"|"scheduling"|"scheduled";
 
 export default function WhatsAppApprovalPanel({product,campaign,publishImage}:{product:ProductData;campaign:CampaignCopy;publishImage?:string}){
+  const productUrl=product.url;
+  const initialBody=campaign.whatsappBody?.includes(productUrl)?campaign.whatsappBody:`${campaign.whatsappBody||""}\n\nBuy now: ${productUrl}`.trim();
   const[templateName,setTemplateName]=useState(campaign.whatsappTemplateName||"");
   const[language,setLanguage]=useState("en");
-  const[body,setBody]=useState(campaign.whatsappBody||"");
+  const[body,setBody]=useState(initialBody);
   const[draft,setDraft]=useState<Draft|null>(null);
   const[scheduledFor,setScheduledFor]=useState("");
   const[state,setState]=useState<State>("editing");
@@ -32,7 +34,7 @@ export default function WhatsAppApprovalPanel({product,campaign,publishImage}:{p
         const response=await fetch("/api/meta/assets",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({dataUrl:publishImage})}),asset=await response.json();
         if(!response.ok)throw new Error(asset.error);imageUrl=asset.url;
       }
-      const data=await call("POST",{platform:"whatsapp",product,imageUrl,templateName,templateLanguage:language,body,cta:campaign.whatsappCta||"VIEW PRODUCT"});
+      const data=await call("POST",{platform:"whatsapp",product,imageUrl,templateName,templateLanguage:language,body,cta:"BUY NOW",productUrl});
       setDraft({id:data.campaign.id,variationId:data.campaign.variationId});setState("review");
       setMessage("WhatsApp draft saved. Confirm that the template name exactly matches an approved Meta template.");
     }catch(error){setState("editing");setMessage(error instanceof Error?error.message:"Unable to save WhatsApp draft.")}
@@ -58,6 +60,7 @@ export default function WhatsAppApprovalPanel({product,campaign,publishImage}:{p
       <label>APPROVED META TEMPLATE NAME<input value={templateName} onChange={event=>setTemplateName(event.target.value)} disabled={state!=="editing"}/></label>
       <label>TEMPLATE LANGUAGE<input value={language} onChange={event=>setLanguage(event.target.value)} disabled={state!=="editing"}/></label>
       <label>MESSAGE PREVIEW<textarea value={body} onChange={event=>setBody(event.target.value)} disabled={state!=="editing"}/></label>
+      <div className="whatsapp-cta-preview"><span>CALL TO ACTION</span><a href={productUrl} target="_blank" rel="noreferrer">BUY NOW <ExternalLink size={14}/></a><small>{productUrl}</small></div>
       <small>{contacts===null?"Checking audience…":`${contacts} opted-in contact${contacts===1?"":"s"} available`}</small>
     </div></div>
     <div className="whatsapp-compliance"><strong>Consent required</strong><span>Only contacts recorded with explicit WhatsApp marketing opt-in will receive this approved template. Opted-out contacts are excluded automatically.</span></div>
