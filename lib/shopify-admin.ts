@@ -24,8 +24,9 @@ function shopDomain(): string {
   return `${shop}.myshopify.com`;
 }
 
-async function getAccessToken(): Promise<string> {
+async function getAccessToken(forceRefresh = false): Promise<string> {
   const now = Date.now();
+  if (forceRefresh) tokenCache = null;
   if (tokenCache && tokenCache.expiresAt > now + 60_000) return tokenCache.token;
 
   const response = await fetch(`https://${shopDomain()}/admin/oauth/access_token`, {
@@ -56,10 +57,8 @@ export async function shopifyGraphQL<T>(
   query: string,
   variables: Record<string, unknown> = {}
 ): Promise<T> {
-  const token = await getAccessToken();
-  const response = await fetch(
-    `https://${shopDomain()}/admin/api/${API_VERSION}/graphql.json`,
-    {
+  const request = (token: string) =>
+    fetch(`https://${shopDomain()}/admin/api/${API_VERSION}/graphql.json`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -68,8 +67,12 @@ export async function shopifyGraphQL<T>(
       },
       body: JSON.stringify({ query, variables }),
       cache: "no-store"
-    }
-  );
+    });
+
+  let response = await request(await getAccessToken());
+  if (response.status === 401) {
+    response = await request(await getAccessToken(true));
+  }
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
