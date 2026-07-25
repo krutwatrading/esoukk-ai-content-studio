@@ -1,0 +1,9 @@
+.review-actions .archive-campaign{margin-left:auto;background:#f3ead8;color:#72551f;border:1px solid #d8bd86}
+.review-actions .delete-campaign{background:#fff;color:#7a2020;border:1px solid #d9aaa5}
+.calendar-event-actions{display:flex;align-items:center;gap:2px}
+.calendar-event-actions button{display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:transparent;color:#72551f}
+.calendar-event-actions button:last-child{color:#8a3030}
+.calendar-event-actions button:hover{background:rgba(200,169,106,.2)}
+.calendar-event-actions button:active{transform:scale(.88)}
+.calendar-event-actions button:disabled{opacity:.45}
+@media(max-width:720px){.review-actions .archive-campaign{margin-left:0}}

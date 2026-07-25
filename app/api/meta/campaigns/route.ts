@@ -12,7 +12,7 @@ async function context() {
 export async function GET() {
   const ctx = await context();
   if (!ctx) return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
-  const { data: campaigns, error } = await ctx.supabase.from("campaigns").select("id,name,status,settings,product_snapshot,scheduled_for,published_at,publishing_error,external_post_url,publish_attempts,created_at").eq("organization_id",ctx.membership.organization_id).order("created_at",{ascending:false}).limit(30);
+  const { data: campaigns, error } = await ctx.supabase.from("campaigns").select("id,name,status,settings,product_snapshot,scheduled_for,published_at,publishing_error,external_post_url,publish_attempts,created_at").eq("organization_id",ctx.membership.organization_id).neq("status","archived").order("created_at",{ascending:false}).limit(30);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   const ids=(campaigns||[]).map(item=>item.id);
   if(!ids.length)return NextResponse.json({campaigns:[]});
@@ -46,7 +46,16 @@ export async function PATCH(request: NextRequest) {
   if (!ctx) return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
   if (!["owner", "admin", "approver"].includes(ctx.membership.role)) return NextResponse.json({ error: "An owner, admin or approver must approve publishing." }, { status: 403 });
   const body = await request.json(), campaignId = String(body.campaignId || ""), variationId = String(body.variationId || "");
-  if (!campaignId || !variationId) return NextResponse.json({ error: "Campaign approval information is missing." }, { status: 400 });
+  if (!campaignId) return NextResponse.json({ error: "Campaign information is missing." }, { status: 400 });
+  if (body.action === "archive") {
+    const {data:campaign,error:readError}=await ctx.supabase.from("campaigns").select("status,settings").eq("id",campaignId).eq("organization_id",ctx.membership.organization_id).single();
+    if(readError)return NextResponse.json({error:readError.message},{status:400});
+    if(campaign.status==="publishing")return NextResponse.json({error:"Wait for publishing to finish before archiving this campaign."},{status:409});
+    const {error}=await ctx.supabase.from("campaigns").update({status:"archived",scheduled_for:null,settings:{...(campaign.settings||{}),archived_from_status:campaign.status,archived_at:new Date().toISOString()}}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
+    if(error)return NextResponse.json({error:error.message},{status:400});
+    return NextResponse.json({status:"archived"});
+  }
+  if (!variationId) return NextResponse.json({ error: "Campaign approval information is missing." }, { status: 400 });
   if (body.action === "approve") {
     const { error } = await ctx.supabase.from("approvals").insert({ organization_id: ctx.membership.organization_id, campaign_id: campaignId, variation_id: variationId, decision: "approved", comment: "Approved for publishing", decided_by: ctx.user.id });
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -88,4 +97,19 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({status:"ready_for_review"});
   }
   return NextResponse.json({ error: "Unsupported publishing action." }, { status: 400 });
+}
+
+export async function DELETE(request: NextRequest) {
+  const ctx=await context();
+  if(!ctx)return NextResponse.json({error:"Sign in is required."},{status:401});
+  if(!["owner","admin"].includes(ctx.membership.role))return NextResponse.json({error:"Only an owner or admin can permanently delete campaigns."},{status:403});
+  const campaignId=String(request.nextUrl.searchParams.get("campaignId")||"");
+  if(!campaignId)return NextResponse.json({error:"Campaign information is missing."},{status:400});
+  const {data:campaign,error:readError}=await ctx.supabase.from("campaigns").select("id,name,status").eq("id",campaignId).eq("organization_id",ctx.membership.organization_id).single();
+  if(readError)return NextResponse.json({error:readError.message},{status:404});
+  if(campaign.status==="publishing")return NextResponse.json({error:"Wait for publishing to finish before deleting this campaign."},{status:409});
+  await ctx.supabase.from("audit_logs").insert({organization_id:ctx.membership.organization_id,actor_id:ctx.user.id,action:"campaign.deleted",object_type:"campaign",object_id:campaignId,metadata:{name:campaign.name,status:campaign.status}});
+  const {error}=await ctx.supabase.from("campaigns").delete().eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
+  if(error)return NextResponse.json({error:error.message},{status:400});
+  return NextResponse.json({deleted:true});
 }
