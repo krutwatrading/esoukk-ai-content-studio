@@ -23,7 +23,7 @@ function normalisePhone(value:string){
 export async function GET(){
   const ctx=await context();if(ctx.error)return ctx.error;
   const{data,error}=await ctx.supabase.from("whatsapp_contacts")
-    .select("id,phone_e164,display_name,locale,marketing_opt_in,opt_in_source,opted_in_at,opted_out_at")
+    .select("id,phone_e164,email,display_name,first_name,last_name,locale,marketing_opt_in,opt_in_source,opted_in_at,opted_out_at,shopify_customer_id,email_marketing_state,sms_marketing_state,shopify_tags,synced_at")
     .eq("organization_id",ctx.membership.organization_id).order("created_at",{ascending:false});
   if(error)return tableError(error.message);
   const contacts=data||[],optedIn=contacts.filter(contact=>contact.marketing_opt_in&&!contact.opted_out_at).length;

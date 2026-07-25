@@ -199,15 +199,15 @@ export async function getShopifyConnectionStatus() {
   return data.shop;
 }
 
-export async function registerProductWebhooks(callbackUrl: string) {
+export async function registerShopifyWebhooks(callbackUrl: string) {
   const existing = await shopifyGraphQL<{webhookSubscriptions:{nodes:Array<{id:string;topic:string;uri:string}>}}>(`#graphql
-    query ExistingProductWebhooks($first: Int!) {
-      webhookSubscriptions(first: $first, topics: [PRODUCTS_CREATE, PRODUCTS_UPDATE]) {
+    query ExistingAutomationWebhooks($first: Int!) {
+      webhookSubscriptions(first: $first, topics: [PRODUCTS_CREATE, PRODUCTS_UPDATE, CUSTOMERS_CREATE, CUSTOMERS_UPDATE]) {
         nodes { id topic uri }
       }
     }
   `,{first:50});
-  const topics=["PRODUCTS_CREATE","PRODUCTS_UPDATE"] as const;
+  const topics=["PRODUCTS_CREATE","PRODUCTS_UPDATE","CUSTOMERS_CREATE","CUSTOMERS_UPDATE"] as const;
   const registered:string[]=[];
   for(const topic of topics){
     if(existing.webhookSubscriptions.nodes.some(item=>item.topic===topic&&item.uri===callbackUrl)){registered.push(topic);continue;}
@@ -224,3 +224,5 @@ export async function registerProductWebhooks(callbackUrl: string) {
   }
   return registered;
 }
+
+export const registerProductWebhooks = registerShopifyWebhooks;

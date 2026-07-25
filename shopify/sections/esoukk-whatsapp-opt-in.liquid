@@ -1,0 +1,41 @@
+{% comment %}
+  Requires a Shopify App Proxy:
+  Subpath prefix: apps
+  Subpath: esoukk-ai
+  Proxy URL: https://ai.esoukk.ae/api/shopify
+{% endcomment %}
+<section class="esoukk-whatsapp-optin" style="max-width:640px;margin:24px auto;padding:24px;border:1px solid #d8c39b;border-radius:18px;background:#fbf7ef">
+  <h2 style="margin:0 0 8px">Get eSoukk launches on WhatsApp</h2>
+  <p style="margin:0 0 18px">Receive new arrivals, private offers and product updates. You can opt out anytime.</p>
+  <form method="post" action="/apps/esoukk-ai/whatsapp-opt-in">
+    {% if customer %}
+      <input type="hidden" name="customer_id" value="{{ customer.id }}">
+      <input type="hidden" name="display_name" value="{{ customer.name | escape }}">
+      <input type="hidden" name="email" value="{{ customer.email | escape }}">
+    {% else %}
+      <label style="display:block;margin-bottom:12px">Name
+        <input name="display_name" autocomplete="name" style="display:block;width:100%;padding:12px;margin-top:5px">
+      </label>
+      <label style="display:block;margin-bottom:12px">Email
+        <input type="email" name="email" autocomplete="email" style="display:block;width:100%;padding:12px;margin-top:5px">
+      </label>
+    {% endif %}
+    <label style="display:block;margin-bottom:12px">WhatsApp mobile number
+      <input type="tel" name="phone" value="{{ customer.phone | escape }}" placeholder="+971501234567" autocomplete="tel" required style="display:block;width:100%;padding:12px;margin-top:5px">
+    </label>
+    <label style="display:flex;gap:10px;align-items:flex-start;margin:16px 0">
+      <input type="checkbox" name="whatsapp_marketing_opt_in" value="yes" required style="margin-top:4px">
+      <span>I agree to receive marketing messages from eSoukk on WhatsApp. I can opt out anytime by replying STOP.</span>
+    </label>
+    <input type="hidden" name="return_to" value="{{ request.path }}">
+    <button type="submit" style="border:0;border-radius:999px;padding:13px 24px;background:#9b6b25;color:white;font-weight:700">Join WhatsApp updates</button>
+  </form>
+</section>
+
+{% schema %}
+{
+  "name": "WhatsApp marketing opt-in",
+  "settings": [],
+  "presets": [{ "name": "WhatsApp marketing opt-in" }]
+}
+{% endschema %}
