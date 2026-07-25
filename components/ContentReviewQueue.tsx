@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import WhatsAppAudienceManager from "./WhatsAppAudienceManager";
 import { Archive, CalendarClock, CheckCircle2, ExternalLink, RefreshCw, Send, Trash2, XCircle } from "lucide-react";
 
 type Item={id:string;name:string;status:string;scheduled_for:string|null;published_at:string|null;publishing_error:string|null;external_post_url:string|null;publish_attempts:number;product_snapshot:{title?:string};settings:{image_url?:string;platform?:string};variation:{id:string;platform:string;content:{caption?:string;body?:string;image_url?:string;template_name?:string;cta_label?:string;product_url?:string}}|null};
@@ -23,6 +24,7 @@ export default function ContentReviewQueue(){
 function ReviewCard({item,busy,action,publish,remove}:{item:Item;busy:string;action:(item:Item,name:string,extra?:Record<string,string>)=>void;publish:(item:Item)=>void;remove:(item:Item)=>void}){
   const platform=item.settings.platform==="whatsapp"?"whatsapp":"instagram";
   const[content,setContent]=useState(item.variation?.content.caption||item.variation?.content.body||""),[date,setDate]=useState("");
+  const[consentConfirmed,setConsentConfirmed]=useState(false),[optedIn,setOptedIn]=useState(0);
   const working=busy.startsWith(item.id),image=item.variation?.content.image_url||item.settings?.image_url;
   const safeWhatsAppRetry=platform==="whatsapp"&&Boolean(item.publishing_error?.includes("whatsapp_contacts"));
   return <article className="review-card">
@@ -31,12 +33,13 @@ function ReviewCard({item,busy,action,publish,remove}:{item:Item;busy:string;act
       {platform==="whatsapp"&&item.variation?.content.template_name&&<small>Template: {item.variation.content.template_name}</small>}
       <textarea value={content} onChange={event=>setContent(event.target.value)} disabled={item.status==="published"||working}/>
       {item.publishing_error&&<p className="queue-error">{item.publishing_error}</p>}
+      {platform==="whatsapp"&&<details className="queue-whatsapp-audience" open={safeWhatsAppRetry}><summary>Manage opted-in WhatsApp audience ({optedIn} eligible)</summary><WhatsAppAudienceManager compact onCountChange={setOptedIn}/></details>}
       {item.scheduled_for&&<p className="queue-time"><CalendarClock size={14}/> {new Date(item.scheduled_for).toLocaleString("en-AE",{timeZone:"Asia/Dubai"})} UAE</p>}
       <div className="review-actions">
         {item.status!=="published"&&<button type="button" onClick={()=>action(item,"update_caption",{caption:content})} disabled={working}><RefreshCw size={15}/>Save changes</button>}
         {["ready_for_review","changes_requested"].includes(item.status)&&<button type="button" className="approve" onClick={()=>action(item,"approve")} disabled={working}><CheckCircle2 size={15}/>Approve</button>}
         {["ready_for_review","approved","changes_requested"].includes(item.status)&&<button type="button" className="reject" onClick={()=>action(item,"reject")} disabled={working}><XCircle size={15}/>Reject</button>}
-        {item.status==="approved"&&<><input type="datetime-local" value={date} onChange={event=>setDate(event.target.value)}/><button type="button" onClick={()=>action(item,"schedule",{scheduledFor:new Date(`${date}:00+04:00`).toISOString()})} disabled={working||!date}><CalendarClock size={15}/>Schedule</button></>}
+        {item.status==="approved"&&<><input type="datetime-local" value={date} onChange={event=>setDate(event.target.value)}/>{platform==="whatsapp"&&<label className="consent-check queue-consent"><input type="checkbox" checked={consentConfirmed} onChange={event=>setConsentConfirmed(event.target.checked)}/><span>Send only to opted-in contacts</span></label>}<button type="button" onClick={()=>action(item,"schedule",{scheduledFor:new Date(`${date}:00+04:00`).toISOString()})} disabled={working||!date||(platform==="whatsapp"&&(!consentConfirmed||!optedIn))}><CalendarClock size={15}/>Schedule</button></>}
         {item.status==="partially_failed"&&(platform==="instagram"||safeWhatsAppRetry)&&<button type="button" className="publish-selected" onClick={()=>action(item,"retry")} disabled={working}><RefreshCw size={15}/>{working?"Preparing…":safeWhatsAppRetry?"Retry after setup":"Retry publishing"}</button>}
         {item.status==="scheduled"&&<button type="button" className="publish-selected" onClick={()=>publish(item)} disabled={working}><Send size={15}/>{working?"Publishing…":platform==="whatsapp"?"Send WhatsApp campaign":"Publish selected post"}</button>}
         {item.external_post_url&&<a href={item.external_post_url} target="_blank" rel="noreferrer">View on Instagram <ExternalLink size={14}/></a>}
