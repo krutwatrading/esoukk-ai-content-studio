@@ -31,6 +31,13 @@ type CustomerNode = {
   smsMarketingConsent: { marketingState: string; consentUpdatedAt: string | null } | null;
 };
 
+type CustomerPageData = {
+  customers: {
+    nodes: CustomerNode[];
+    pageInfo: { hasNextPage: boolean; endCursor: string | null };
+  };
+};
+
 export function normalisePhone(value: string | null | undefined) {
   if (!value) return null;
   const phone = value.trim().replace(/[\s()-]/g, "");
@@ -129,12 +136,7 @@ export async function importShopifyContacts(organizationId: string) {
   let after: string | null = null;
   let imported = 0;
   do {
-    const data = await shopifyGraphQL<{
-      customers: {
-        nodes: CustomerNode[];
-        pageInfo: { hasNextPage: boolean; endCursor: string | null };
-      };
-    }>(`#graphql
+    const data: CustomerPageData = await shopifyGraphQL<CustomerPageData>(`#graphql
       query CustomersForContactSync($first: Int!, $after: String) {
         customers(first: $first, after: $after, sortKey: UPDATED_AT) {
           nodes {
