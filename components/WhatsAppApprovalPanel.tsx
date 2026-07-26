@@ -20,7 +20,7 @@ export default function WhatsAppApprovalPanel({product,campaign,publishImage}:{p
   const[state,setState]=useState<State>("editing");
   const[message,setMessage]=useState("");
   const[contacts,setContacts]=useState<number|null>(null);
-  const[consentConfirmed,setConsentConfirmed]=useState(false);
+  const[consentConfirmed,setConsentConfirmed]=useState(true);
 
   useEffect(()=>{fetch("/api/whatsapp/contacts",{cache:"no-store"}).then(response=>response.json()).then(data=>setContacts(Number(data.optedIn||0))).catch(()=>setContacts(null))},[]);
 
@@ -67,11 +67,11 @@ export default function WhatsAppApprovalPanel({product,campaign,publishImage}:{p
       <small>{contacts===null?"Checking audience…":`${contacts} opted-in contact${contacts===1?"":"s"} available`}</small>
     </div></div>
     <div className="whatsapp-compliance"><strong>Consent required</strong><span>Only contacts recorded with explicit WhatsApp marketing opt-in will receive this approved template. Opted-out contacts are excluded automatically.</span></div>
-    <WhatsAppAudienceManager onCountChange={setContacts}/>
+    <WhatsAppAudienceManager compact onCountChange={setContacts}/>
     <div className="publishing-actions">
       {!draft&&<button type="button" onClick={saveDraft} disabled={state==="saving"||!templateName.trim()||!body.trim()||!publishImage}><Save size={16}/>{state==="saving"?"Saving…":"Save WhatsApp Draft"}</button>}
       {(state==="review"||state==="approving")&&<button type="button" className="approve" onClick={approve} disabled={state==="approving"}><CheckCircle2 size={16}/>{state==="approving"?"Approving…":"Approve WhatsApp Campaign"}</button>}
-      {(state==="approved"||state==="scheduling")&&<><label>UAE DATE & TIME<input type="datetime-local" value={scheduledFor} onChange={event=>setScheduledFor(event.target.value)} disabled={state==="scheduling"}/></label><label className="consent-check campaign-consent"><input type="checkbox" checked={consentConfirmed} onChange={event=>setConsentConfirmed(event.target.checked)} disabled={state==="scheduling"}/><span>I confirm this campaign will be sent only to the opted-in contacts shown above.</span></label><button type="button" onClick={schedule} disabled={!scheduledFor||state==="scheduling"||!contacts||!consentConfirmed}><CalendarClock size={16}/>{state==="scheduling"?"Scheduling…":"Schedule WhatsApp"}</button></>}
+      {(state==="approved"||state==="scheduling")&&<><label>UAE DATE & TIME<input type="datetime-local" value={scheduledFor} onChange={event=>setScheduledFor(event.target.value)} disabled={state==="scheduling"}/></label><label className="consent-check campaign-consent"><input type="checkbox" checked={consentConfirmed} onChange={event=>setConsentConfirmed(event.target.checked)} disabled={state==="scheduling"}/><span>Release this campaign to all {contacts} eligible WhatsApp contacts with recorded marketing consent.</span></label><button type="button" onClick={schedule} disabled={!scheduledFor||state==="scheduling"||!contacts||!consentConfirmed}><CalendarClock size={16}/>{state==="scheduling"?"Scheduling…":"Schedule WhatsApp"}</button></>}
       {state==="scheduled"&&<button type="button" className="action-complete" disabled><CheckCircle2 size={16}/>Scheduled</button>}
     </div>
     {message&&<p className="publishing-message">{message}</p>}

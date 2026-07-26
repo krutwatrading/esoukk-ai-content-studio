@@ -13,6 +13,8 @@ export type ShopifyContact = {
   updatedAt: string;
   email: string | null;
   phone: string | null;
+  country: string | null;
+  countryCode: string | null;
   emailMarketingState: string | null;
   smsMarketingState: string | null;
 };
@@ -27,6 +29,11 @@ type CustomerNode = {
   updatedAt: string;
   email: string | null;
   phone: string | null;
+  defaultAddress: {
+    phone: string | null;
+    country: string | null;
+    countryCodeV2: string | null;
+  } | null;
   emailMarketingConsent: { marketingState: string; consentUpdatedAt: string | null } | null;
   smsMarketingConsent: { marketingState: string; consentUpdatedAt: string | null } | null;
 };
@@ -55,7 +62,11 @@ type ShopifyCustomerWebhook = {
   updated_at?: string | null;
   tags?: string[] | string | null;
   accepts_marketing?: boolean;
-  default_address?: { phone?: string | null } | null;
+  default_address?: {
+    phone?: string | null;
+    country?: string | null;
+    country_code?: string | null;
+  } | null;
   email_marketing_consent?: { state?: string | null } | null;
   sms_marketing_consent?: { state?: string | null } | null;
 };
@@ -74,6 +85,8 @@ export function contactFromWebhook(customer: ShopifyCustomerWebhook): ShopifyCon
     updatedAt: customer.updated_at || new Date().toISOString(),
     email: customer.email || null,
     phone: customer.phone || customer.default_address?.phone || null,
+    country: customer.default_address?.country || null,
+    countryCode: customer.default_address?.country_code || null,
     emailMarketingState: customer.email_marketing_consent?.state || (customer.accepts_marketing ? "SUBSCRIBED" : "NOT_SUBSCRIBED"),
     smsMarketingState: customer.sms_marketing_consent?.state || null,
   };
@@ -123,6 +136,8 @@ export async function upsertShopifyContact(organizationId: string, contact: Shop
     last_name: contact.lastName,
     email,
     phone_e164: phone,
+    country: contact.country,
+    country_code: contact.countryCode,
     customer_state: contact.state || null,
     email_marketing_state: contact.emailMarketingState,
     sms_marketing_state: contact.smsMarketingState,
@@ -157,6 +172,7 @@ export async function importShopifyContacts(organizationId: string) {
         customers(first: $first, after: $after, sortKey: UPDATED_AT) {
           nodes {
             id displayName firstName lastName email phone tags state updatedAt
+            defaultAddress { phone country countryCodeV2 }
             emailMarketingConsent { marketingState consentUpdatedAt }
             smsMarketingConsent { marketingState consentUpdatedAt }
           }
@@ -178,7 +194,9 @@ export async function importShopifyContacts(organizationId: string) {
             state: customer.state,
             updatedAt: customer.updatedAt,
             email: customer.email,
-            phone: customer.phone,
+            phone: customer.phone || customer.defaultAddress?.phone || null,
+            country: customer.defaultAddress?.country || null,
+            countryCode: customer.defaultAddress?.countryCodeV2 || null,
             emailMarketingState: customer.emailMarketingConsent?.marketingState || null,
             smsMarketingState: customer.smsMarketingConsent?.marketingState || null,
           })
