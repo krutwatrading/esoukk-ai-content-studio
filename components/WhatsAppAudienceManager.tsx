@@ -9,25 +9,41 @@ type Contact = {
   shopify_customer_id: string | null;
 };
 
+async function readApiResponse(response: Response) {
+  const text = await response.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    if (response.status >= 500 || text.trimStart().startsWith("An error")) {
+      throw new Error("The Shopify synchronization did not finish before the server timeout. Please try again.");
+    }
+    throw new Error("The server returned an invalid response. Please refresh and try again.");
+  }
+}
+
 export default function WhatsAppAudienceManager({ compact=false, onCountChange }: { compact?: boolean; onCountChange?: (count:number)=>void }) {
   const [contacts,setContacts]=useState<Contact[]>([]);
   const [name,setName]=useState(""),[phone,setPhone]=useState(""),[confirmed,setConfirmed]=useState(false);
   const [busy,setBusy]=useState(""),[message,setMessage]=useState("");
   const load=useCallback(async()=>{
     try {
-      const response=await fetch("/api/whatsapp/contacts",{cache:"no-store"}),data=await response.json();
-      if(!response.ok) throw new Error(data.error);
-      setContacts(data.contacts||[]); onCountChange?.(Number(data.optedIn||0));
+      const response=await fetch("/api/whatsapp/contacts",{cache:"no-store"}),data=await readApiResponse(response);
+      if(!response.ok) throw new Error(String(data.error||"Unable to load the contact library."));
+      setContacts((data.contacts as Contact[])||[]); onCountChange?.(Number(data.optedIn||0));
     } catch(error) { setMessage(error instanceof Error?error.message:"Unable to load the contact library."); }
   },[onCountChange]);
-  useEffect(()=>{void load()},[load]);
+  useEffect(()=>{
+    const timer=window.setTimeout(()=>{void load()},0);
+    return ()=>window.clearTimeout(timer);
+  },[load]);
 
   async function syncShopify(){
     setBusy("sync");setMessage("");
     try {
-      const response=await fetch("/api/shopify/customers/sync",{method:"POST"}),data=await response.json();
-      if(!response.ok)throw new Error(data.error);
-      setMessage(data.message||"Shopify contacts synchronized.");await load();
+      const response=await fetch("/api/shopify/customers/sync",{method:"POST"}),data=await readApiResponse(response);
+      if(!response.ok)throw new Error(String(data.error||"Unable to synchronize Shopify customers."));
+      setMessage(String(data.message||"Shopify contacts synchronized."));await load();
     } catch(error){setMessage(error instanceof Error?error.message:"Unable to synchronize Shopify customers.")}
     finally{setBusy("")}
   }

@@ -44,7 +44,23 @@ export function normalisePhone(value: string | null | undefined) {
   return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : null;
 }
 
-export function contactFromWebhook(customer: Record<string, any>): ShopifyContact {
+type ShopifyCustomerWebhook = {
+  id?: string | number;
+  admin_graphql_api_id?: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  state?: string | null;
+  updated_at?: string | null;
+  tags?: string[] | string | null;
+  accepts_marketing?: boolean;
+  default_address?: { phone?: string | null } | null;
+  email_marketing_consent?: { state?: string | null } | null;
+  sms_marketing_consent?: { state?: string | null } | null;
+};
+
+export function contactFromWebhook(customer: ShopifyCustomerWebhook): ShopifyContact {
   const tags = Array.isArray(customer.tags)
     ? customer.tags
     : String(customer.tags || "").split(",").map((tag) => tag.trim()).filter(Boolean);
@@ -148,21 +164,27 @@ export async function importShopifyContacts(organizationId: string) {
         }
       }
     `, { first: 100, after });
-    for (const customer of data.customers.nodes) {
-      const saved = await upsertShopifyContact(organizationId, {
-        id: customer.id,
-        displayName: customer.displayName,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        tags: customer.tags || [],
-        state: customer.state,
-        updatedAt: customer.updatedAt,
-        email: customer.email,
-        phone: customer.phone,
-        emailMarketingState: customer.emailMarketingConsent?.marketingState || null,
-        smsMarketingState: customer.smsMarketingConsent?.marketingState || null,
-      });
-      if (saved) imported++;
+    const customers = data.customers.nodes;
+    const batchSize = 10;
+    for (let index = 0; index < customers.length; index += batchSize) {
+      const results = await Promise.all(
+        customers.slice(index, index + batchSize).map((customer) =>
+          upsertShopifyContact(organizationId, {
+            id: customer.id,
+            displayName: customer.displayName,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            tags: customer.tags || [],
+            state: customer.state,
+            updatedAt: customer.updatedAt,
+            email: customer.email,
+            phone: customer.phone,
+            emailMarketingState: customer.emailMarketingConsent?.marketingState || null,
+            smsMarketingState: customer.smsMarketingConsent?.marketingState || null,
+          })
+        )
+      );
+      imported += results.filter(Boolean).length;
     }
     after = data.customers.pageInfo.hasNextPage ? data.customers.pageInfo.endCursor : null;
   } while (after);
