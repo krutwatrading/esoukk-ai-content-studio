@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
         phone,
         emailMarketingState: null,
         smsMarketingState: null,
-        defaultAddress: null,
       });
     } else {
       const now = new Date().toISOString();
