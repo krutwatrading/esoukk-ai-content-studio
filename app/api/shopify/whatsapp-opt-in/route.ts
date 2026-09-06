@@ -44,9 +44,12 @@ export async function POST(request: NextRequest) {
     if (!organization) throw new Error("No eSoukk organization is configured.");
     if (customerId) {
       await upsertShopifyContact(organization.id, {
-        id: customerId, displayName: name || email || phone, firstName: null, lastName: null, defaultAddress: null,
+        id: customerId, displayName: name || email || phone, firstName: null, lastName: null,
         tags: ["esoukk-whatsapp-opt-in"], state: "ENABLED", updatedAt: new Date().toISOString(),
-        email, phone, emailMarketingState: null, smsMarketingState: null,
+        email,
+        phone,
+        emailMarketingState: null,
+        smsMarketingState: null,
         defaultAddress: null,
       });
     } else {

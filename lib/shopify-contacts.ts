@@ -13,8 +13,8 @@ export type ShopifyContact = {
   updatedAt: string;
   email: string | null;
   phone: string | null;
-  country: string | null;
-  countryCode: string | null;
+  country?: string | null;
+  countryCode?: string | null;
   emailMarketingState: string | null;
   smsMarketingState: string | null;
 };
@@ -29,9 +29,9 @@ type CustomerNode = {
   updatedAt: string;
   email: string | null;
   phone: string | null;
-  defaultAddress: {
+  defaultAddress?: {
     phone: string | null;
-    country: string | null;
+    country?: string | null;
     countryCodeV2: string | null;
   } | null;
   emailMarketingConsent: { marketingState: string; consentUpdatedAt: string | null } | null;
