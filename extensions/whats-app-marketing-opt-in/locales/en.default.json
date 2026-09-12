@@ -1,0 +1,12 @@
+{
+  "whatsapp_opt_in": {
+    "name": "WhatsApp marketing opt-in",
+    "heading": "Get eSoukk launches on WhatsApp",
+    "description": "Receive new arrivals, private offers and product updates. You can opt out anytime.",
+    "name_label": "Name",
+    "email_label": "Email",
+    "phone_label": "WhatsApp mobile number",
+    "consent_label": "I agree to receive marketing messages from eSoukk on WhatsApp. I can opt out anytime by replying STOP.",
+    "submit": "Join WhatsApp updates"
+  }
+}

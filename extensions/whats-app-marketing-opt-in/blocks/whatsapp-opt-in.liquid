@@ -1,0 +1,26 @@
+<section class="esoukk-whatsapp-opt-in" style="max-width:640px;margin:24px auto;padding:24px;border:1px solid #d8c39b;border-radius:18px;background:#fbf7ef" {{ block.shopify_attributes }}>
+  <h2 style="margin:0 0 8px">{{ 'whatsapp_opt_in.heading' | t }}</h2>
+  <p style="margin:0 0 18px">{{ 'whatsapp_opt_in.description' | t }}</p>
+  <form method="post" action="/apps/esoukk-ai/whatsapp-opt-in">
+    {% if customer %}
+      <input type="hidden" name="customer_id" value="{{ customer.id }}">
+      <input type="hidden" name="display_name" value="{{ customer.name | escape }}">
+      <input type="hidden" name="email" value="{{ customer.email | escape }}">
+    {% else %}
+      <label style="display:block;margin-bottom:12px"><span style="display:block;margin-bottom:5px">{{ 'whatsapp_opt_in.name_label' | t }}</span><input name="display_name" autocomplete="name" style="width:100%;padding:12px"></label>
+      <label style="display:block;margin-bottom:12px"><span style="display:block;margin-bottom:5px">{{ 'whatsapp_opt_in.email_label' | t }}</span><input type="email" name="email" autocomplete="email" style="width:100%;padding:12px"></label>
+    {% endif %}
+    <label style="display:block;margin-bottom:12px"><span style="display:block;margin-bottom:5px">{{ 'whatsapp_opt_in.phone_label' | t }}</span><input type="tel" name="phone" value="{{ customer.phone | escape }}" placeholder="+971501234567" autocomplete="tel" required style="width:100%;padding:12px"></label>
+    <label style="display:flex;gap:10px;align-items:flex-start;margin:16px 0"><input type="checkbox" name="whatsapp_marketing_opt_in" value="yes" required style="margin-top:4px"><span>{{ 'whatsapp_opt_in.consent_label' | t }}</span></label>
+    <input type="hidden" name="return_to" value="{{ request.path | escape }}">
+    <button type="submit" style="border:0;border-radius:999px;padding:13px 24px;background:#9b6b25;color:#ffffff;font-weight:700">{{ 'whatsapp_opt_in.submit' | t }}</button>
+  </form>
+</section>
+
+{% schema %}
+{
+  "name": "t:whatsapp_opt_in.name",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}

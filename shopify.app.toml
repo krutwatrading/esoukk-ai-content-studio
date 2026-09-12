@@ -1,0 +1,23 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "7773de723d25731aab0fb44d1fbe7bb3"
+name = "eSoukk AI Commerce Studio"
+application_url = "https://ai.esoukk.ae"
+embedded = false
+
+[webhooks]
+api_version = "2026-07"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,write_customers,read_products"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ ]
+
+[app_proxy]
+url = "https://ai.esoukk.ae/api/shopify"
+subpath = "esoukk-ai"
+prefix = "apps"
