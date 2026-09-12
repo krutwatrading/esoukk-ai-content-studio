@@ -7,6 +7,10 @@
     "email_label": "Email",
     "phone_label": "WhatsApp mobile number",
     "consent_label": "I agree to receive marketing messages from eSoukk on WhatsApp. I can opt out anytime by replying STOP.",
-    "submit": "Join WhatsApp updates"
+    "submit": "Join WhatsApp updates",
+    "submitting": "Joining...",
+    "success": "You are now subscribed to WhatsApp updates.",
+    "error": "We could not save your subscription. Please try again.",
+    "phone_error": "Enter a valid mobile number with country code, for example +971501234567. UAE numbers may also start with 05."
   }
 }

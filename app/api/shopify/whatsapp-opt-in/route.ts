@@ -5,6 +5,14 @@ import { addShopifyWhatsAppOptInTag, normalisePhone, upsertShopifyContact } from
 
 export const runtime = "nodejs";
 
+function normaliseStorefrontPhone(value: string) {
+  const compact = value.trim().replace(/[\s()-]/g, "");
+  if (/^05\d{8}$/.test(compact)) return `+971${compact.slice(1)}`;
+  if (/^9715\d{8}$/.test(compact)) return `+${compact}`;
+  if (compact.startsWith("00")) return normalisePhone(`+${compact.slice(2)}`);
+  return normalisePhone(compact);
+}
+
 function validProxySignature(url: URL) {
   const signature = url.searchParams.get("signature");
   const secret = process.env.SHOPIFY_CLIENT_SECRET;
@@ -29,7 +37,7 @@ export async function POST(request: NextRequest) {
   if (form.get("whatsapp_marketing_opt_in") !== "yes") {
     return NextResponse.json({ error: "WhatsApp marketing consent was not selected." }, { status: 400 });
   }
-  const phone = normalisePhone(String(form.get("phone") || ""));
+  const phone = normaliseStorefrontPhone(String(form.get("phone") || ""));
   const email = String(form.get("email") || "").trim().toLowerCase() || null;
   if (!phone) return NextResponse.json({ error: "A valid international mobile number is required." }, { status: 400 });
   const customerIdRaw = String(form.get("customer_id") || "").trim();
