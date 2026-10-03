@@ -25,12 +25,12 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const ctx = await context();
   if (!ctx) return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
-  const body = await request.json(), platform = body.platform === "whatsapp" ? "whatsapp" : "instagram", imageUrl = String(body.imageUrl || "").trim(), product = body.product || {};
+  const body = await request.json(), requestedPlatform = String(body.platform || "instagram"), platform = requestedPlatform === "whatsapp" || requestedPlatform === "facebook" ? requestedPlatform : "instagram", imageUrl = String(body.imageUrl || "").trim(), product = body.product || {};
   const caption = String(body.caption || "").trim(), templateName = String(body.templateName || "").trim(), templateLanguage = String(body.templateLanguage || "en").trim(), messageBody = String(body.body || "").trim();
   if (!imageUrl || !product.title) return NextResponse.json({ error: "Product and public image are required." }, { status: 400 });
-  if (platform === "instagram" && !caption) return NextResponse.json({ error: "Instagram caption is required." }, { status: 400 });
+  if ((platform === "instagram" || platform === "facebook") && !caption) return NextResponse.json({ error: `${platform === "facebook" ? "Facebook" : "Instagram"} caption is required.` }, { status: 400 });
   if (platform === "whatsapp" && (!templateName || !messageBody)) return NextResponse.json({ error: "Approved WhatsApp template name and message preview are required." }, { status: 400 });
-  const label = platform === "whatsapp" ? "WhatsApp" : "Instagram";
+  const label = platform === "whatsapp" ? "WhatsApp" : platform === "facebook" ? "Facebook" : "Instagram";
   const { data: campaign, error: campaignError } = await ctx.supabase.from("campaigns").insert({ organization_id: ctx.membership.organization_id, name: `${label} · ${String(product.title)}`, status: "ready_for_review", settings: { platform, timezone: "Asia/Dubai", image_url: imageUrl }, product_snapshot: product, created_by: ctx.user.id }).select("id,status,scheduled_for").single();
   if (campaignError) return NextResponse.json({ error: campaignError.message }, { status: 400 });
   const content = platform === "whatsapp"

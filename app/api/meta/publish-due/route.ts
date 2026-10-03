@@ -32,7 +32,8 @@ async function run(request: NextRequest) {
       const { data: approval } = await admin.from("approvals").select("variation_id").eq("campaign_id",campaign.id).eq("decision","approved").order("created_at",{ascending:false}).limit(1).maybeSingle();
       if (!approval) throw new Error("No recorded approval was found.");
       const { data: variation } = await admin.from("campaign_variations").select("content,platform").eq("id",approval.variation_id).single();
-      const platform=campaign.settings?.platform==="whatsapp"?"whatsapp":"instagram";
+      const requestedPlatform=String(campaign.settings?.platform||variation?.platform||"instagram");
+      const platform=requestedPlatform==="whatsapp"||requestedPlatform==="facebook"?requestedPlatform:"instagram";
       const { data: connection } = await admin.from("social_connections").select("provider_account_id,encrypted_access_token").eq("organization_id",campaign.organization_id).eq("provider",platform).eq("status","active").limit(1).single();
       if(platform==="whatsapp"){
         const templateName=String(variation?.content?.template_name||""),language=String(variation?.content?.template_language||"en"),imageUrl=String(variation?.content?.image_url||campaign.settings?.image_url||"");
@@ -59,8 +60,18 @@ async function run(request: NextRequest) {
         continue;
       }
       const caption=String(variation?.content?.caption||""),imageUrl=String(variation?.content?.image_url||campaign.settings?.image_url||"");
-      if(!caption||!imageUrl||!connection)throw new Error("Approved caption, public image or Instagram connection is missing.");
+      if(!caption||!imageUrl||!connection)throw new Error(`Approved caption, public image or ${platform === "facebook" ? "Facebook" : "Instagram"} connection is missing.`);
       const accessToken=decryptToken(connection.encrypted_access_token),accountId=connection.provider_account_id;
+      if(platform==="facebook"){
+        const publishResponse=await fetch(`https://graph.facebook.com/v25.0/${encodeURIComponent(accountId)}/photos`,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({url:imageUrl,message:caption,published:"true",access_token:accessToken})});
+        const published=await publishResponse.json();
+        if(!publishResponse.ok||(!published.post_id&&!published.id))throw new Error(published.error?.message||"Facebook publishing failed.");
+        const postId=String(published.post_id||published.id),postUrl=`https://www.facebook.com/${postId}`;
+        await admin.from("campaigns").update({status:"published",published_at:new Date().toISOString(),external_post_id:postId,external_post_url:postUrl,publishing_error:null}).eq("id",campaign.id);
+        await admin.from("audit_logs").insert({organization_id:campaign.organization_id,actor_id:context.actorId||null,action:"facebook.published",object_type:"campaign",object_id:campaign.id,metadata:{facebook_post_id:postId,post_url:postUrl}});
+        results.push({campaignId:campaign.id,status:"published",postUrl});
+        continue;
+      }
       const createResponse=await fetch(`https://graph.instagram.com/v25.0/${accountId}/media`,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({image_url:imageUrl,caption,access_token:accessToken})});
       const container=await createResponse.json();if(!createResponse.ok||!container.id)throw new Error(container.error?.message||"Instagram media container creation failed.");
       let ready=false;
