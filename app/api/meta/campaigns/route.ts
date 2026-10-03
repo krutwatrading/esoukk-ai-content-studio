@@ -25,16 +25,19 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const ctx = await context();
   if (!ctx) return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
-  const body = await request.json(), requestedPlatform = String(body.platform || "instagram"), platform = requestedPlatform === "whatsapp" || requestedPlatform === "facebook" ? requestedPlatform : "instagram", imageUrl = String(body.imageUrl || "").trim(), product = body.product || {};
-  const caption = String(body.caption || "").trim(), templateName = String(body.templateName || "").trim(), templateLanguage = String(body.templateLanguage || "en").trim(), messageBody = String(body.body || "").trim();
+  const body = await request.json(), requestedPlatform = String(body.platform || "instagram"), platform = ["whatsapp", "facebook", "pinterest"].includes(requestedPlatform) ? requestedPlatform : "instagram", imageUrl = String(body.imageUrl || "").trim(), product = body.product || {};
+  const caption = String(body.caption || "").trim(), title = String(body.title || "").trim(), templateName = String(body.templateName || "").trim(), templateLanguage = String(body.templateLanguage || "en").trim(), messageBody = String(body.body || "").trim();
   if (!imageUrl || !product.title) return NextResponse.json({ error: "Product and public image are required." }, { status: 400 });
   if ((platform === "instagram" || platform === "facebook") && !caption) return NextResponse.json({ error: `${platform === "facebook" ? "Facebook" : "Instagram"} caption is required.` }, { status: 400 });
+  if (platform === "pinterest" && (!title || !caption)) return NextResponse.json({ error: "Pinterest title and description are required." }, { status: 400 });
   if (platform === "whatsapp" && (!templateName || !messageBody)) return NextResponse.json({ error: "Approved WhatsApp template name and message preview are required." }, { status: 400 });
-  const label = platform === "whatsapp" ? "WhatsApp" : platform === "facebook" ? "Facebook" : "Instagram";
+  const label = platform === "whatsapp" ? "WhatsApp" : platform === "facebook" ? "Facebook" : platform === "pinterest" ? "Pinterest" : "Instagram";
   const { data: campaign, error: campaignError } = await ctx.supabase.from("campaigns").insert({ organization_id: ctx.membership.organization_id, name: `${label} · ${String(product.title)}`, status: "ready_for_review", settings: { platform, timezone: "Asia/Dubai", image_url: imageUrl }, product_snapshot: product, created_by: ctx.user.id }).select("id,status,scheduled_for").single();
   if (campaignError) return NextResponse.json({ error: campaignError.message }, { status: 400 });
   const content = platform === "whatsapp"
     ? { template_name: templateName, template_language: templateLanguage, body: messageBody, image_url: imageUrl, cta: String(body.cta || "SHOP NOW"), cta_label: String(body.cta || "SHOP NOW"), product_url: String(body.productUrl || product.url || "") }
+    : platform === "pinterest"
+      ? { title, description: caption, caption, image_url: imageUrl, product_url: String(body.productUrl || product.url || "") }
     : { caption, image_url: imageUrl };
   const { data: variation, error: variationError } = await ctx.supabase.from("campaign_variations").insert({ organization_id: ctx.membership.organization_id, campaign_id: campaign.id, platform, variation_number: 1, content, created_by: ctx.user.id }).select("id").single();
   if (variationError) return NextResponse.json({ error: variationError.message }, { status: 400 });
@@ -90,7 +93,7 @@ export async function PATCH(request: NextRequest) {
   if (body.action === "update_caption") {
     const caption=String(body.caption||"").trim();if(!caption)return NextResponse.json({error:"Content cannot be empty."},{status:400});
     const {data:variation}=await ctx.supabase.from("campaign_variations").select("content,platform").eq("id",variationId).eq("campaign_id",campaignId).single();
-    const key=variation?.platform==="whatsapp"?"body":"caption";
+    const key=variation?.platform==="whatsapp"?"body":variation?.platform==="pinterest"?"description":"caption";
     const {error}=await ctx.supabase.from("campaign_variations").update({content:{...(variation?.content||{}),[key]:caption}}).eq("id",variationId).eq("campaign_id",campaignId);
     if(error)return NextResponse.json({error:error.message},{status:400});
     await ctx.supabase.from("campaigns").update({status:"ready_for_review",scheduled_for:null,publishing_error:null}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);

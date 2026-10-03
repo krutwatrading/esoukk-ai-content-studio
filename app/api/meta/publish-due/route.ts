@@ -33,7 +33,7 @@ async function run(request: NextRequest) {
       if (!approval) throw new Error("No recorded approval was found.");
       const { data: variation } = await admin.from("campaign_variations").select("content,platform").eq("id",approval.variation_id).single();
       const requestedPlatform=String(campaign.settings?.platform||variation?.platform||"instagram");
-      const platform=requestedPlatform==="whatsapp"||requestedPlatform==="facebook"?requestedPlatform:"instagram";
+      const platform=["whatsapp","facebook","pinterest"].includes(requestedPlatform)?requestedPlatform:"instagram";
       const { data: connection } = await admin.from("social_connections").select("provider_account_id,encrypted_access_token").eq("organization_id",campaign.organization_id).eq("provider",platform).eq("status","active").limit(1).single();
       if(platform==="whatsapp"){
         const templateName=String(variation?.content?.template_name||""),language=String(variation?.content?.template_language||"en"),imageUrl=String(variation?.content?.image_url||campaign.settings?.image_url||"");
@@ -60,8 +60,20 @@ async function run(request: NextRequest) {
         continue;
       }
       const caption=String(variation?.content?.caption||""),imageUrl=String(variation?.content?.image_url||campaign.settings?.image_url||"");
-      if(!caption||!imageUrl||!connection)throw new Error(`Approved caption, public image or ${platform === "facebook" ? "Facebook" : "Instagram"} connection is missing.`);
+      if(!caption||!imageUrl||!connection)throw new Error(`Approved content, public image or ${platform === "facebook" ? "Facebook" : platform === "pinterest" ? "Pinterest" : "Instagram"} connection is missing.`);
       const accessToken=decryptToken(connection.encrypted_access_token),accountId=connection.provider_account_id;
+      if(platform==="pinterest"){
+        const boardId=String(process.env.PINTEREST_BOARD_ID||"").trim(),title=String(variation?.content?.title||campaign.name),description=String(variation?.content?.description||caption),link=String(variation?.content?.product_url||"");
+        if(!boardId)throw new Error("PINTEREST_BOARD_ID is not configured.");
+        const publishResponse=await fetch("https://api.pinterest.com/v5/pins",{method:"POST",headers:{Authorization:`Bearer ${accessToken}`,"Content-Type":"application/json"},body:JSON.stringify({board_id:boardId,title:title.slice(0,100),description:description.slice(0,500),link:link||undefined,media_source:{source_type:"image_url",url:imageUrl}})});
+        const published=await publishResponse.json();
+        if(!publishResponse.ok||!published.id)throw new Error(published.message||published.error?.message||"Pinterest publishing failed.");
+        const pinId=String(published.id),postUrl=`https://www.pinterest.com/pin/${pinId}/`;
+        await admin.from("campaigns").update({status:"published",published_at:new Date().toISOString(),external_post_id:pinId,external_post_url:postUrl,publishing_error:null}).eq("id",campaign.id);
+        await admin.from("audit_logs").insert({organization_id:campaign.organization_id,actor_id:context.actorId||null,action:"pinterest.published",object_type:"campaign",object_id:campaign.id,metadata:{pinterest_pin_id:pinId,board_id:boardId,post_url:postUrl}});
+        results.push({campaignId:campaign.id,status:"published",postUrl});
+        continue;
+      }
       if(platform==="facebook"){
         const publishResponse=await fetch(`https://graph.facebook.com/v25.0/${encodeURIComponent(accountId)}/photos`,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({url:imageUrl,message:caption,published:"true",access_token:accessToken})});
         const published=await publishResponse.json();

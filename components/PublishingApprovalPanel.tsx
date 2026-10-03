@@ -5,21 +5,23 @@ import { CalendarClock, CheckCircle2, Save } from "lucide-react";
 import type { CampaignCopy, ProductData } from "@/lib/types";
 
 type Draft = { id: string; variationId: string };
-type Platform = "instagram" | "facebook";
+type Platform = "instagram" | "facebook" | "pinterest";
 type State = "editing" | "saving" | "review" | "approving" | "approved" | "scheduling" | "scheduled";
 
 export default function PublishingApprovalPanel({ product, campaign, publishImage }: { product: ProductData; campaign: CampaignCopy; publishImage?: string }) {
   const captions: Record<Platform, string> = {
     instagram: `${campaign.instagramCaption}\n\n${campaign.instagramHashtags.join(" ")}`,
     facebook: `${campaign.facebookCaption}\n\n${campaign.facebookHashtags.join(" ")}`,
+    pinterest: `${campaign.pinterestDescription}\n\n${campaign.pinterestHashtags.join(" ")}`,
   };
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [caption, setCaption] = useState(captions.instagram);
+  const [title, setTitle] = useState(campaign.pinterestTitle);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [scheduledFor, setScheduledFor] = useState("");
   const [state, setState] = useState<State>("editing");
   const [message, setMessage] = useState("");
-  const label = platform === "facebook" ? "Facebook" : "Instagram";
+  const label = platform === "facebook" ? "Facebook" : platform === "pinterest" ? "Pinterest" : "Instagram";
 
   async function call(method: "POST" | "PATCH", body: unknown) {
     const response = await fetch("/api/meta/campaigns", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -45,7 +47,7 @@ export default function PublishingApprovalPanel({ product, campaign, publishImag
         if (!upload.ok) throw new Error(asset.error);
         imageUrl = asset.url;
       }
-      const data = await call("POST", { product, caption, imageUrl, platform });
+      const data = await call("POST", { product, caption, title, imageUrl, platform, productUrl: product.url });
       setDraft({ id: data.campaign.id, variationId: data.campaign.variationId });
       setState("review");
       setMessage(`${label} draft saved with the selected creative. Review it before approval.`);
@@ -85,10 +87,10 @@ export default function PublishingApprovalPanel({ product, campaign, publishImag
   const preview = publishImage || product.images[0];
   return <section className="publishing-approval">
     <div className="publishing-title"><div><span>META APPROVAL</span><h3>Review the final post</h3><small className={publishImage ? "creative-selected" : "creative-fallback"}>{publishImage ? "Designed social creative selected ✓" : "Using original Shopify image — select a creative in the Creatives tab"}</small></div><strong className={`publishing-state ${state}`}>{state === "review" ? "READY FOR REVIEW" : state === "saving" ? "SAVING…" : state === "approving" ? "APPROVING…" : state === "scheduling" ? "SCHEDULING…" : state.toUpperCase()}</strong></div>
-    <div className="publishing-platform" role="group" aria-label="Publishing channel"><button type="button" className={platform === "instagram" ? "active" : ""} onClick={() => choosePlatform("instagram")} disabled={state !== "editing"}>Instagram</button><button type="button" className={platform === "facebook" ? "active" : ""} onClick={() => choosePlatform("facebook")} disabled={state !== "editing"}>Facebook Page</button></div>
-    <div className="publishing-preview"><img src={preview} alt={product.title}/><label>FINAL {label.toUpperCase()} CAPTION<textarea value={caption} onChange={event => setCaption(event.target.value)} disabled={state !== "editing"}/><small>{caption.length} characters</small></label></div>
+    <div className="publishing-platform" role="group" aria-label="Publishing channel"><button type="button" className={platform === "instagram" ? "active" : ""} onClick={() => choosePlatform("instagram")} disabled={state !== "editing"}>Instagram</button><button type="button" className={platform === "facebook" ? "active" : ""} onClick={() => choosePlatform("facebook")} disabled={state !== "editing"}>Facebook Page</button><button type="button" className={platform === "pinterest" ? "active" : ""} onClick={() => choosePlatform("pinterest")} disabled={state !== "editing"}>Pinterest</button></div>
+    <div className="publishing-preview"><img src={preview} alt={product.title}/><div className="publishing-copy-fields">{platform === "pinterest" && <label>PIN TITLE<input value={title} onChange={event => setTitle(event.target.value)} disabled={state !== "editing"} maxLength={100}/><small>{title.length}/100 characters</small></label>}<label>FINAL {label.toUpperCase()} {platform === "pinterest" ? "DESCRIPTION" : "CAPTION"}<textarea value={caption} onChange={event => setCaption(event.target.value)} disabled={state !== "editing"} maxLength={platform === "pinterest" ? 500 : undefined}/><small>{caption.length}{platform === "pinterest" ? "/500" : ""} characters</small></label></div></div>
     <div className="publishing-actions">
-      {!draft && <button type="button" className="ui-action" onClick={saveDraft} disabled={state === "saving" || !caption.trim()}><Save size={16}/>{state === "saving" ? "Uploading & saving…" : `Save ${label} Draft`}</button>}
+      {!draft && <button type="button" className="ui-action" onClick={saveDraft} disabled={state === "saving" || !caption.trim() || (platform === "pinterest" && !title.trim())}><Save size={16}/>{state === "saving" ? "Uploading & saving…" : `Save ${label} Draft`}</button>}
       {(state === "review" || state === "approving") && <button type="button" className="ui-action approve" onClick={approve} disabled={state === "approving"}><CheckCircle2 size={16}/>{state === "approving" ? "Approving…" : `Approve ${label} Post`}</button>}
       {(state === "approved" || state === "scheduling") && <><label>UAE DATE &amp; TIME<input type="datetime-local" value={scheduledFor} onChange={event => setScheduledFor(event.target.value)} disabled={state === "scheduling"}/></label><button type="button" className="ui-action" onClick={schedule} disabled={!scheduledFor || state === "scheduling"}><CalendarClock size={16}/>{state === "scheduling" ? "Scheduling…" : "Schedule"}</button></>}
       {state === "scheduled" && <button type="button" className="ui-action action-complete" disabled><CheckCircle2 size={16}/>Scheduled ✓</button>}

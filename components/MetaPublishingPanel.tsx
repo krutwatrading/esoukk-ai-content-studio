@@ -1,18 +1,19 @@
 "use client";
 
 import {useEffect,useState,type ReactNode} from "react";
-import {Facebook,Ghost,Instagram,MessageCircle,Music2,Search,ShieldCheck,Unplug,Youtube} from "lucide-react";
+import {Facebook,Ghost,Images,Instagram,MessageCircle,Music2,Search,ShieldCheck,Unplug,Youtube} from "lucide-react";
 
 type Channel={id:string;name:string;configured:boolean;connected:boolean;accountName:string|null;callbackUrl:string;keys:string[]};
 type Status={channels:Channel[]};
 
-const icons:Record<string,ReactNode>={instagram:<Instagram/>,facebook:<Facebook/>,tiktok:<Music2/>,google:<><Search/><Youtube/></>,snapchat:<Ghost/>,whatsapp:<MessageCircle/>};
-const connectPath:Record<string,string>={instagram:"/api/meta/connect",facebook:"/api/facebook/connect",tiktok:"/api/tiktok/connect",whatsapp:"/api/whatsapp/connect"};
+const icons:Record<string,ReactNode>={instagram:<Instagram/>,facebook:<Facebook/>,tiktok:<Music2/>,google:<><Search/><Youtube/></>,snapchat:<Ghost/>,whatsapp:<MessageCircle/>,pinterest:<Images/>};
+const connectPath:Record<string,string>={instagram:"/api/meta/connect",facebook:"/api/facebook/connect",tiktok:"/api/tiktok/connect",whatsapp:"/api/whatsapp/connect",pinterest:"/api/pinterest/connect"};
 
 function setupNote(channelId:string){
   if(channelId==="tiktok")return "Login Kit uses user.info.basic while Production review is pending.";
   if(channelId==="facebook")return "Enable Facebook Login for Business with pages_show_list, pages_read_engagement and pages_manage_posts.";
   if(channelId==="whatsapp")return "Use a permanent system-user token. Marketing sends are restricted to opted-in contacts and approved WhatsApp templates.";
+  if(channelId==="pinterest")return "Pinterest requires an approved developer app, a business account and a public board ID for Pin publishing.";
   return "The official OAuth and publishing endpoint will be activated after credentials are supplied.";
 }
 
