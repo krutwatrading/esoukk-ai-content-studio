@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { ImagePlus, Sparkles, ShoppingBag, WandSparkles } from "lucide-react";
 import CreativeCanvas from "./CreativeCanvas";
 import ShopifyProductPicker from "./ShopifyProductPicker";
@@ -17,8 +18,9 @@ import CampaignCalendar from "./CampaignCalendar";
 import CreativeProductionPanel from "./CreativeProductionPanel";
 import WhatsAppApprovalPanel from "./WhatsAppApprovalPanel";
 import AuditTrail from "./AuditTrail";
-import VideoProductionStudio from "./VideoProductionStudio";
 import type { BrandProfile, CampaignCopy, CreativePlatform, ProductData, VisualStyle } from "@/lib/types";
+
+const VideoProductionStudio=dynamic(()=>import("./VideoProductionStudio"),{ssr:false,loading:()=> <div className="status">Loading video studio…</div>});
 
 type ApiResult={product:ProductData;campaign:CampaignCopy;imageUrl:string;imageUrls?:string[];replacements?:{index:number;imageUrl:string}[];error?:string};
 const creativeFormats:Record<CreativePlatform,{label:string;width:number;height:number}> = {
