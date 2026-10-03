@@ -64,6 +64,7 @@ export async function PATCH(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     const { error: updateError } = await ctx.supabase.from("campaigns").update({ status: "approved" }).eq("id", campaignId).eq("organization_id", ctx.membership.organization_id);
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 400 });
+    await ctx.supabase.from("audit_logs").insert({organization_id:ctx.membership.organization_id,actor_id:ctx.user.id,action:"campaign.approved",object_type:"campaign",object_id:campaignId,metadata:{variation_id:variationId}});
     return NextResponse.json({ status: "approved" });
   }
   if (body.action === "schedule") {
@@ -73,12 +74,14 @@ export async function PATCH(request: NextRequest) {
     if (!approved) return NextResponse.json({ error: "Approve this draft before scheduling it." }, { status: 409 });
     const { error } = await ctx.supabase.from("campaigns").update({ status: "scheduled", scheduled_for: scheduledFor.toISOString(), publishing_error: null }).eq("id", campaignId).eq("organization_id", ctx.membership.organization_id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    await ctx.supabase.from("audit_logs").insert({organization_id:ctx.membership.organization_id,actor_id:ctx.user.id,action:"campaign.scheduled",object_type:"campaign",object_id:campaignId,metadata:{variation_id:variationId,scheduled_for:scheduledFor.toISOString()}});
     return NextResponse.json({ status: "scheduled", scheduledFor: scheduledFor.toISOString() });
   }
   if (body.action === "reject") {
     const { error } = await ctx.supabase.from("approvals").insert({ organization_id: ctx.membership.organization_id, campaign_id: campaignId, variation_id: variationId, decision: "rejected", comment: String(body.comment||"Rejected during review"), decided_by: ctx.user.id });
     if(error)return NextResponse.json({error:error.message},{status:400});
     await ctx.supabase.from("campaigns").update({status:"changes_requested",scheduled_for:null}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
+    await ctx.supabase.from("audit_logs").insert({organization_id:ctx.membership.organization_id,actor_id:ctx.user.id,action:"campaign.rejected",object_type:"campaign",object_id:campaignId,metadata:{variation_id:variationId,comment:String(body.comment||"Rejected during review")}});
     return NextResponse.json({status:"changes_requested"});
   }
   if (body.action === "retry") {
@@ -88,6 +91,7 @@ export async function PATCH(request: NextRequest) {
     if(isWhatsApp&&!isPreSendSetupFailure)return NextResponse.json({error:"WhatsApp partial campaigns cannot be retried automatically because successful recipients must not receive duplicates."},{status:409});
     const {error}=await ctx.supabase.from("campaigns").update({status:"scheduled",scheduled_for:new Date(Date.now()-1000).toISOString(),publishing_error:null,external_post_id:null,external_post_url:null}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
     if(error)return NextResponse.json({error:error.message},{status:400});
+    await ctx.supabase.from("audit_logs").insert({organization_id:ctx.membership.organization_id,actor_id:ctx.user.id,action:"campaign.retry_requested",object_type:"campaign",object_id:campaignId,metadata:{previous_error:campaign?.publishing_error||null}});
     return NextResponse.json({status:"scheduled"});
   }
   if (body.action === "update_caption") {
