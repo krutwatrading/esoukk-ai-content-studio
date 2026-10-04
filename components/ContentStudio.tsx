@@ -18,6 +18,7 @@ import CampaignCalendar from "./CampaignCalendar";
 import CreativeProductionPanel from "./CreativeProductionPanel";
 import WhatsAppApprovalPanel from "./WhatsAppApprovalPanel";
 import AuditTrail from "./AuditTrail";
+import ProductionReadiness from "./ProductionReadiness";
 import type { BrandProfile, CampaignCopy, CreativePlatform, ProductData, VisualStyle } from "@/lib/types";
 
 const VideoProductionStudio=dynamic(()=>import("./VideoProductionStudio"),{ssr:false,loading:()=> <div className="status">Loading video studio…</div>});
@@ -67,6 +68,7 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
   return <div className="shell"><header className="topbar"><BrandLogo className="header-logo"/><div className="badge">eSoukk AI Content Studio · Approval Mode</div></header><main>
     <section className="hero"><h1>One product.<br/>A full campaign.</h1><p>Choose an eSoukk Shopify product. The agent applies your saved brand rules and writes native copy for each platform—not duplicated captions.</p></section>
     <BrandProfilePanel initial={brandProfile} onSaved={setBrandProfile}/>
+    <ProductionReadiness/>
     <ShopifyAutomation/>
     <ShopifyContactLibrary/>
     <CreativeProductionPanel/>
@@ -91,6 +93,6 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
       {tab==="video"&&<VideoProductionStudio product={product} campaign={campaign} background={background}/>}
       {tab==="seo"&&<div className="copy-grid"><div className="copy-card"><h3>SEO Title</h3><p>{campaign.seoTitle}</p></div><div className="copy-card"><h3>Meta Description</h3><p>{campaign.metaDescription}</p></div><div className="copy-card full"><h3>Compliance Check</h3><p>{campaign.complianceNotes.map(x=>`• ${x}`).join("\n")}</p></div></div>}
     </>}</div></section>}
-    <p className="footer-note">Approval mode is intentional: content is reviewed before publishing.</p>
+    <p className="footer-note">Approval mode is intentional: content is reviewed before publishing. · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
   </main></div>;
 }

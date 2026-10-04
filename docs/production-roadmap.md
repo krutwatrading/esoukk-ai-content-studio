@@ -9,5 +9,6 @@
 7. Approval roles, audit log, retries and token revocation.
 8. Performance analytics and creative recommendations.
 9. Automated video rendering and approved voiceovers.
+10. Production safety and reliability: private health checks, legal pages, rate limiting, monitoring and backup readiness.
 
 Production must include encrypted tokens, rate limiting, moderation, claim validation, privacy/terms pages, monitoring and backups.
