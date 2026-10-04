@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const response = await fetch(`${RUNWAY_API}/image_to_video`, {
       method: "POST",
       headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json", "X-Runway-Version": RUNWAY_VERSION },
-      body: JSON.stringify({ model: "wan3", promptImage: imageUrl, promptText, ratio: quality === "720p" ? "720:1280" : "480:832", duration: 25, audio: true }),
+      body: JSON.stringify({ model: "wan3", promptImage: [{ uri: imageUrl }], promptText, ratio: quality === "720p" ? "720:1280" : "480:832", duration: 25, audio: true }),
     });
     const raw = await response.text();
     if (!response.ok) return NextResponse.json({ error: runwayError(raw, response.status) }, { status: response.status >= 500 ? 502 : response.status });
