@@ -10,5 +10,6 @@
 8. Performance analytics and creative recommendations.
 9. Automated video rendering and approved voiceovers.
 10. Production safety and reliability: private health checks, legal pages, Supabase-backed rate limiting, audit monitoring and a verified backup-restore runbook.
+11. Consent-safe email automation: Shopify email audiences, permanent suppressions, provider connection, approval, scheduling and delivery reporting.
 
 Production must include encrypted tokens, rate limiting, moderation, claim validation, privacy/terms pages, monitoring and backups.

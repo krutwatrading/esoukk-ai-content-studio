@@ -19,6 +19,7 @@ import CreativeProductionPanel from "./CreativeProductionPanel";
 import WhatsAppApprovalPanel from "./WhatsAppApprovalPanel";
 import AuditTrail from "./AuditTrail";
 import ProductionReadiness from "./ProductionReadiness";
+import EmailAutomation from "./EmailAutomation";
 import type { BrandProfile, CampaignCopy, CreativePlatform, ProductData, VisualStyle } from "@/lib/types";
 
 const VideoProductionStudio=dynamic(()=>import("./VideoProductionStudio"),{ssr:false,loading:()=> <div className="status">Loading video studio…</div>});
@@ -71,6 +72,7 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
     <ProductionReadiness/>
     <ShopifyAutomation/>
     <ShopifyContactLibrary/>
+    <EmailAutomation/>
     <CreativeProductionPanel/>
     <MetaPublishingPanel/>
     <ContentReviewQueue/>
