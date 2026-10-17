@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const directions: Record<string, string> = {
   luxury: "luxury UAE fashion editorial in refined architecture, warm champagne light",
@@ -79,6 +80,8 @@ Return only valid JSON with this exact shape:
 }
 
 export async function POST(req: NextRequest) {
+  const access = await enforceRateLimit("lifestyle-image", 20, 3600);
+  if (access.response) return access.response;
   try {
     if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is required for AI campaign generation.");
     const supabase = await createSupabaseServerClient();

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -26,6 +27,8 @@ function runwayError(raw: string, status: number) {
 }
 
 export async function POST(request: NextRequest) {
+  const access = await enforceRateLimit("runway-video", 6, 3600);
+  if (access.response) return access.response;
   if (!await authorized()) return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
   const secret = process.env.RUNWAYML_API_SECRET;
   if (!secret) return NextResponse.json({ error: "RUNWAYML_API_SECRET is required for Runway video generation." }, { status: 503 });

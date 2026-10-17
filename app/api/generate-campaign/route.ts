@@ -1,2 +1,2 @@
-import {NextRequest,NextResponse} from "next/server"; import {generateCampaign} from "@/lib/campaign";
-export async function POST(req:NextRequest){try{return NextResponse.json({campaign:await generateCampaign(await req.json())});}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Unable to generate campaign."},{status:400})}}
+import {NextRequest,NextResponse} from "next/server"; import {generateCampaign} from "@/lib/campaign";import{enforceRateLimit}from"@/lib/rate-limit";
+export async function POST(req:NextRequest){const access=await enforceRateLimit("campaign-generation",12,3600);if(access.response)return access.response;try{return NextResponse.json({campaign:await generateCampaign(await req.json())},{headers:access.headers});}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Unable to generate campaign."},{status:400,headers:access.headers})}}
