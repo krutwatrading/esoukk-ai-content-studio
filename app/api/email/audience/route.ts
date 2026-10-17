@@ -13,5 +13,6 @@ export async function GET(){
  if(contactsError)return NextResponse.json({error:contactsError.message},{status:400});
  if(suppressionError){const missing=suppressionError.code==="42P01";return NextResponse.json({error:missing?"Apply migration 202610170002_email_automation_foundation.sql.":suppressionError.message,setupRequired:missing},{status:missing?503:400})}
  const blocked=new Set((suppressions||[]).map(item=>item.email_hash)),withEmail=contacts||[],subscribed=withEmail.filter(item=>String(item.email_marketing_state||"").toUpperCase()==="SUBSCRIBED"),eligible=subscribed.filter(item=>!blocked.has(hash(String(item.email))));
- return NextResponse.json({totalWithEmail:withEmail.length,subscribed:subscribed.length,suppressed:subscribed.length-eligible.length,eligible:eligible.length,providerConfigured:false},{headers:{"Cache-Control":"private, no-store"}});
+ const providerChecks={apiKey:Boolean(process.env.RESEND_API_KEY),fromAddress:Boolean(process.env.RESEND_FROM_EMAIL),webhookSecret:Boolean(process.env.RESEND_WEBHOOK_SECRET)};
+ return NextResponse.json({totalWithEmail:withEmail.length,subscribed:subscribed.length,suppressed:subscribed.length-eligible.length,eligible:eligible.length,providerConfigured:Object.values(providerChecks).every(Boolean),providerChecks},{headers:{"Cache-Control":"private, no-store"}});
 }
