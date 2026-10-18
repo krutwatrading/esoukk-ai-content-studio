@@ -2,6 +2,8 @@
 
 Phase 11.3 enables private KAVIA and eSoukk test messages to the signed-in account. Bulk campaign release remains locked.
 
+Phase 11.5 adds approval scheduling and a protected batch worker. Apply `202610180002_email_scheduling_delivery.sql` before using scheduling. Keep `EMAIL_BULK_SEND_ENABLED=false` until the unsubscribe launch drill in Phase 11.7 is complete.
+
 ## 1. Verify a sending subdomain
 
 In Resend, add `updates.shopkavia.com` and `updates.esoukk.ae`, then add the DNS records Resend supplies for each domain. Dedicated subdomains protect the main storefront domains' reputations. Wait until Resend reports both domains as **Verified**.
