@@ -5,7 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
-  const access = await enforceRateLimit("email-schedule", 20, 3600);
+  const access = await enforceRateLimit("email-schedule", 100, 3600);
   if (access.response) return access.response;
   const { id } = await context.params, input = await request.json().catch(() => ({})) as { scheduledFor?: unknown; consentConfirmed?: unknown };
   const scheduledFor = new Date(String(input.scheduledFor || ""));

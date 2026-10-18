@@ -5,7 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 
 export async function POST(_request: Request, context: { params: Promise<{ id: string }> }) {
-  const access = await enforceRateLimit("email-approve", 20, 3600);
+  const access = await enforceRateLimit("email-approve", 100, 3600);
   if (access.response) return access.response;
   const { id } = await context.params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid campaign ID." }, { status: 400, headers: access.headers });

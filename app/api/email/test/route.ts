@@ -12,7 +12,7 @@ const clean=(value:unknown,max:number)=>String(value||"").trim().slice(0,max);
 const validCta=(value:unknown)=>{if(!value)return"";try{const url=new URL(String(value));return url.protocol==="https:"&&allowedHosts().has(url.hostname.toLowerCase())?url.toString():""}catch{return""}};
 
 export async function POST(request:Request){
- const access=await enforceRateLimit("email-test",5,3600);if(access.response)return access.response;
+ const access=await enforceRateLimit("email-test",30,3600);if(access.response)return access.response;
  const apiKey=process.env.RESEND_API_KEY,webhookSecret=process.env.RESEND_WEBHOOK_SECRET;
  if(!apiKey||!webhookSecret)return NextResponse.json({error:"Complete the Resend API key and webhook secret in Vercel first."},{status:503,headers:access.headers});
  if(!access.user.email)return NextResponse.json({error:"Your signed-in account does not have an email address."},{status:400,headers:access.headers});

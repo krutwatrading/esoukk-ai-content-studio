@@ -18,7 +18,7 @@ const approvedUrl = (value: unknown) => {
 };
 
 export async function POST(request: Request) {
-  const access = await enforceRateLimit("email-draft", 20, 3600);
+  const access = await enforceRateLimit("email-draft", 100, 3600);
   if (access.response) return access.response;
   const input = await request.json().catch(() => ({})) as Record<string, unknown>;
   const brand = parseEmailBrand(input.brand), subject = clean(input.subject, 150), preview = clean(input.preview, 220), body = clean(input.body, 5000), ctaLabel = clean(input.ctaLabel, 50) || "Shop now", ctaUrl = approvedUrl(input.ctaUrl), productTitle = clean(input.productTitle, 180);
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const access = await enforceRateLimit("email-draft-edit", 30, 3600);
+  const access = await enforceRateLimit("email-draft-edit", 100, 3600);
   if (access.response) return access.response;
   const input = await request.json().catch(() => ({})) as Record<string, unknown>;
   const campaignId = clean(input.campaignId, 36), brand = parseEmailBrand(input.brand), subject = clean(input.subject, 150), preview = clean(input.preview, 220), body = clean(input.body, 5000), ctaLabel = clean(input.ctaLabel, 50) || "Shop now", ctaUrl = approvedUrl(input.ctaUrl), productTitle = clean(input.productTitle, 180);
