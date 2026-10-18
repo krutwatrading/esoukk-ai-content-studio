@@ -9,9 +9,8 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   if (access.response) return access.response;
   const { id } = await context.params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Invalid campaign ID." }, { status: 400, headers: access.headers });
+  if (!["owner", "admin", "approver"].includes(access.role)) return NextResponse.json({ error: `Your workspace role (${access.role}) cannot approve campaigns. Ask an owner to change it to owner, admin or approver.` }, { status: 403, headers: access.headers });
   const admin = createSupabaseAdminClient();
-  const { data: membership } = await admin.from("organization_members").select("role").eq("organization_id", access.organizationId).eq("user_id", access.user.id).maybeSingle();
-  if (!membership || !["owner", "admin", "approver"].includes(membership.role)) return NextResponse.json({ error: "An owner, admin or approver must approve this campaign." }, { status: 403, headers: access.headers });
   const { data: campaign } = await admin.from("campaigns").select("id,status,settings").eq("id", id).eq("organization_id", access.organizationId).maybeSingle();
   if (!campaign) return NextResponse.json({ error: "Email campaign not found." }, { status: 404, headers: access.headers });
   if (campaign.status !== "ready_for_review") return NextResponse.json({ error: `Only campaigns awaiting review can be approved. Current status: ${campaign.status}.` }, { status: 409, headers: access.headers });

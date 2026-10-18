@@ -11,9 +11,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const scheduledFor = new Date(String(input.scheduledFor || ""));
   if (!input.consentConfirmed) return NextResponse.json({ error: "Confirm that delivery is restricted to currently subscribed, non-suppressed contacts." }, { status: 400, headers: access.headers });
   if (Number.isNaN(scheduledFor.valueOf()) || scheduledFor <= new Date(Date.now() + 60_000)) return NextResponse.json({ error: "Choose a time at least one minute in the future." }, { status: 400, headers: access.headers });
+  if (!["owner", "admin", "approver"].includes(access.role)) return NextResponse.json({ error: `Your workspace role (${access.role}) cannot schedule campaigns. Ask an owner to change it to owner, admin or approver.` }, { status: 403, headers: access.headers });
   const admin = createSupabaseAdminClient();
-  const { data: membership } = await admin.from("organization_members").select("role").eq("organization_id", access.organizationId).eq("user_id", access.user.id).maybeSingle();
-  if (!membership || !["owner", "admin", "approver"].includes(membership.role)) return NextResponse.json({ error: "An owner, admin or approver must schedule this campaign." }, { status: 403, headers: access.headers });
   const { data: campaign } = await admin.from("campaigns").select("id,status,settings").eq("id", id).eq("organization_id", access.organizationId).maybeSingle();
   if (!campaign || campaign.status !== "approved" || (campaign.settings as { channel?: string } | null)?.channel !== "email") return NextResponse.json({ error: "Only an approved email campaign can be scheduled." }, { status: 409, headers: access.headers });
   const { error } = await admin.from("campaigns").update({ status: "scheduled", scheduled_for: scheduledFor.toISOString(), publishing_error: null }).eq("id", id).eq("organization_id", access.organizationId).eq("status", "approved");
