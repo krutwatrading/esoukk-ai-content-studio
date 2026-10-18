@@ -1,18 +1,23 @@
 # Resend email delivery setup
 
-Phase 11.2 deliberately enables only a private test message to the signed-in account. Bulk campaign release remains locked.
+Phase 11.3 enables private KAVIA and eSoukk test messages to the signed-in account. Bulk campaign release remains locked.
 
 ## 1. Verify a sending subdomain
 
-In Resend, add `updates.esoukk.ae` as a domain and add the DNS records Resend supplies. A dedicated subdomain protects the main storefront domain's reputation. Wait until Resend reports the domain as **Verified**.
+In Resend, add `updates.shopkavia.com` and `updates.esoukk.ae`, then add the DNS records Resend supplies for each domain. Dedicated subdomains protect the main storefront domains' reputations. Wait until Resend reports both domains as **Verified**.
 
 ## 2. Configure Vercel
 
 Add these Production environment variables to the `esoukk-ai-content-studio` project and redeploy:
 
 - `RESEND_API_KEY`: a Resend sending API key
-- `RESEND_FROM_EMAIL`: `KAVIA <updates@updates.esoukk.ae>`
 - `RESEND_WEBHOOK_SECRET`: the signing secret from the webhook created in step 3
+- `RESEND_KAVIA_FROM_EMAIL`: `KAVIA <hello@updates.shopkavia.com>`
+- `RESEND_KAVIA_REPLY_TO`: a monitored inbox such as `support@shopkavia.com`
+- `RESEND_ESOUKK_FROM_EMAIL`: `eSoukk <hello@updates.esoukk.ae>`
+- `RESEND_ESOUKK_REPLY_TO`: a monitored inbox such as `support@esoukk.ae`
+
+`RESEND_FROM_EMAIL` remains a backward-compatible fallback for KAVIA only.
 
 Never place these values in source control or expose them through a `NEXT_PUBLIC_` variable.
 
@@ -24,6 +29,6 @@ Subscribe to `email.sent`, `email.delivered`, `email.delivery_delayed`, `email.b
 
 ## 4. Validate safely
 
-Open the studio's Email Automation panel. All three setup checks must show a tick. Click **Send test to my account**. Confirm that the message arrives and that Resend shows a successful signed webhook delivery.
+Open the studio's Email Automation panel. Select KAVIA and send a test, then select eSoukk and repeat. Confirm both messages arrive, replies address the correct monitored inbox, and Resend shows successful signed webhook deliveries tagged with the selected brand.
 
 Bounce, complaint, provider suppression, and unsubscribe events are hashed and added to `email_suppressions`; those addresses are excluded from every future eligible audience.
