@@ -72,7 +72,7 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
     <ProductionReadiness/>
     <ShopifyAutomation/>
     <ShopifyContactLibrary/>
-    <EmailAutomation/>
+    <EmailAutomation product={product} campaign={campaign}/>
     <CreativeProductionPanel/>
     <MetaPublishingPanel/>
     <ContentReviewQueue/>
