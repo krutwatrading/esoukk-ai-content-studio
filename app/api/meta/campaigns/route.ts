@@ -14,12 +14,13 @@ export async function GET() {
   if (!ctx) return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
   const { data: campaigns, error } = await ctx.supabase.from("campaigns").select("id,name,status,settings,product_snapshot,scheduled_for,published_at,publishing_error,external_post_url,publish_attempts,created_at").eq("organization_id",ctx.membership.organization_id).neq("status","archived").order("created_at",{ascending:false}).limit(30);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  const ids=(campaigns||[]).map(item=>item.id);
+  const socialCampaigns=(campaigns||[]).filter(item=>(item.settings as {channel?:string}|null)?.channel!=="email");
+  const ids=socialCampaigns.map(item=>item.id);
   if(!ids.length)return NextResponse.json({campaigns:[]});
   const { data: variations } = await ctx.supabase.from("campaign_variations").select("id,campaign_id,platform,content").in("campaign_id",ids).order("created_at",{ascending:false});
   const variationByCampaign=new Map<string,{id:string;platform:string;content:Record<string,unknown>}>();
   for(const variation of variations||[])if(!variationByCampaign.has(variation.campaign_id))variationByCampaign.set(variation.campaign_id,variation);
-  return NextResponse.json({campaigns:(campaigns||[]).map(item=>({...item,variation:variationByCampaign.get(item.id)||null}))});
+  return NextResponse.json({campaigns:socialCampaigns.map(item=>({...item,variation:variationByCampaign.get(item.id)||null}))});
 }
 
 export async function POST(request: NextRequest) {
