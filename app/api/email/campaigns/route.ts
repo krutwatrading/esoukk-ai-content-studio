@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
   const admin = createSupabaseAdminClient();
   const { data: membership } = await admin.from("organization_members").select("role").eq("organization_id", access.organizationId).eq("user_id", access.user.id).maybeSingle();
-  if (!membership || !["owner", "admin", "creator"].includes(membership.role)) return NextResponse.json({ error: "Your workspace role cannot create campaign drafts." }, { status: 403, headers: access.headers });
+  if (!membership || !["owner", "admin", "creator", "approver"].includes(membership.role)) return NextResponse.json({ error: "Your workspace role cannot create campaign drafts." }, { status: 403, headers: access.headers });
 
   const { data: campaign, error: campaignError } = await admin.from("campaigns").insert({ organization_id: access.organizationId, name: `${productTitle} · ${brand === "kavia" ? "KAVIA" : "eSoukk"} email`, status: "ready_for_review", settings: { channel: "email", brand, ctaLabel, ctaUrl }, product_snapshot: { title: productTitle, url: ctaUrl }, prompt_version: "email-approval-v1", created_by: access.user.id }).select("id,status,created_at").single();
   if (campaignError || !campaign) return NextResponse.json({ error: campaignError?.message || "Unable to save the email campaign." }, { status: 500, headers: access.headers });
