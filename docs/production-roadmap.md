@@ -19,6 +19,6 @@
 - Phase 11.4: persistent email review drafts and role-gated approval implemented. Approval does not send.
 - Phase 11.5: scheduling, send-time consent revalidation, protected batch delivery and duplicate prevention implemented. Live delivery remains disabled by default.
 - Phase 11.6: privacy-safe campaign delivery dashboard for sent, delivered, delayed, bounced, complained and failed events implemented.
-- Phase 11.7 remaining: production launch drill, unsubscribe verification and controlled first live campaign.
+- Phase 11.7: signed one-click unsubscribe, permanent suppression, allowlisted test mode and capped production launch controls implemented. The operational launch drill remains intentionally manual.
 
 Production must include encrypted tokens, rate limiting, moderation, claim validation, privacy/terms pages, monitoring and backups.

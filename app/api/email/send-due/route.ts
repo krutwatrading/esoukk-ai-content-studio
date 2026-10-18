@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { emailBrandConfig, parseEmailBrand } from "@/lib/email-brands";
+import { createUnsubscribeToken } from "@/lib/email-unsubscribe";
 
 export const runtime = "nodejs";
 const hash = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
@@ -12,6 +13,10 @@ async function run(request: NextRequest) {
   if (!process.env.CRON_SECRET || request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({ error: "Worker authorization failed." }, { status: 401 });
   if (process.env.EMAIL_BULK_SEND_ENABLED !== "true") return NextResponse.json({ error: "Bulk email delivery is locked. Scheduling is available, but customer sending is disabled." }, { status: 423 });
   if (!process.env.RESEND_API_KEY) return NextResponse.json({ error: "RESEND_API_KEY is missing." }, { status: 503 });
+  if (!process.env.EMAIL_UNSUBSCRIBE_SECRET) return NextResponse.json({ error: "EMAIL_UNSUBSCRIBE_SECRET is required before customer delivery." }, { status: 503 });
+  const audienceMode=process.env.EMAIL_LIVE_AUDIENCE_MODE==="full"?"full":"test",testRecipients=new Set((process.env.EMAIL_LIVE_TEST_RECIPIENTS||"").split(",").map(value=>value.trim().toLowerCase()).filter(Boolean)),recipientLimit=Math.max(1,Math.min(20,Number(process.env.EMAIL_LIVE_RECIPIENT_LIMIT)||5));
+  if(audienceMode==="test"&&!testRecipients.size)return NextResponse.json({error:"Test mode requires EMAIL_LIVE_TEST_RECIPIENTS before delivery."},{status:423});
+  const publicOrigin=(process.env.NEXT_PUBLIC_APP_URL||request.nextUrl.origin).replace(/\/$/,"");
   const admin = createSupabaseAdminClient(), now = new Date().toISOString();
   const { data: campaigns, error: campaignError } = await admin.from("campaigns").select("id,organization_id,settings,scheduled_for,publish_attempts").eq("status", "scheduled").lte("scheduled_for", now).order("scheduled_for").limit(3);
   if (campaignError) return NextResponse.json({ error: campaignError.message }, { status: 500 });
@@ -35,15 +40,15 @@ async function run(request: NextRequest) {
       if (contactError || suppressionError || ledgerError) throw new Error(contactError?.message || suppressionError?.message || ledgerError?.message || "Audience check failed.");
       const blocked = new Set((suppressions || []).map((item) => item.email_hash)), completed = new Set((existing || []).filter((item) => ["sending", "sent", "suppressed"].includes(item.status)).map((item) => item.email_hash));
       const uniqueEmails = [...new Set((contacts || []).map((item) => String(item.email || "").trim().toLowerCase()).filter(Boolean))];
-      const recipients = uniqueEmails.map((email) => ({ email, emailHash: hash(email) })).filter((item) => !blocked.has(item.emailHash) && !completed.has(item.emailHash));
+      const eligibleRecipients = uniqueEmails.map((email) => ({ email, emailHash: hash(email) })).filter((item) => !blocked.has(item.emailHash) && !completed.has(item.emailHash) && (audienceMode==="full"||testRecipients.has(item.email)));
+      const recipients=audienceMode==="test"?eligibleRecipients.slice(0,recipientLimit):eligibleRecipients;
       if (!recipients.length) throw new Error("No unsent, consented recipients are currently eligible.");
       const subject = String(content.subject || "").slice(0, 150), body = String(content.body || "").slice(0, 5000), ctaLabel = String(content.ctaLabel || "Shop now").slice(0, 50), ctaUrl = String(content.ctaUrl || ""), preview = String(content.preview || "").slice(0, 220);
-      const html = `<div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preview)}</div><div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px;color:#181818"><p style="letter-spacing:.12em;color:#9b772e;font-weight:700">${escapeHtml(config.label)}</p><div style="font-size:16px;line-height:1.65">${escapeHtml(body).replace(/\r?\n/g, "<br/>")}</div><p style="margin:28px 0"><a href="${escapeHtml(ctaUrl)}" style="display:inline-block;background:${config.accent};color:#fff;text-decoration:none;padding:14px 22px;border-radius:999px;font-weight:700">${escapeHtml(ctaLabel)}</a></p></div>`;
       let sent = 0;
       for (const batch of chunks(recipients, 100)) {
         const { error: claimError } = await admin.from("email_campaign_recipients").upsert(batch.map((item) => ({ organization_id: campaign.organization_id, campaign_id: campaign.id, email_hash: item.emailHash, status: "sending", attempts: 1 })), { onConflict: "campaign_id,email_hash" });
         if (claimError) throw new Error(`Recipient safety ledger failed: ${claimError.message}`);
-        const payload = batch.map((item) => ({ from: config.sender, to: [item.email], subject, text: `${body}\n\n${ctaLabel}: ${ctaUrl}`, html, reply_to: config.replyTo || undefined, tags: [{ name: "organization_id", value: campaign.organization_id }, { name: "campaign_id", value: campaign.id }, { name: "brand", value: brand }] }));
+        const payload = batch.map((item) => {const token=createUnsubscribeToken(campaign.organization_id,item.emailHash),unsubscribeUrl=`${publicOrigin}/api/email/unsubscribe?token=${encodeURIComponent(token)}`,html=`<div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preview)}</div><div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px;color:#181818"><p style="letter-spacing:.12em;color:#9b772e;font-weight:700">${escapeHtml(config.label)}</p><div style="font-size:16px;line-height:1.65">${escapeHtml(body).replace(/\r?\n/g,"<br/>")}</div><p style="margin:28px 0"><a href="${escapeHtml(ctaUrl)}" style="display:inline-block;background:${config.accent};color:#fff;text-decoration:none;padding:14px 22px;border-radius:999px;font-weight:700">${escapeHtml(ctaLabel)}</a></p><p style="margin-top:36px;color:#777;font-size:12px">You received this because you subscribed to marketing emails. <a href="${escapeHtml(unsubscribeUrl)}">Unsubscribe</a>.</p></div>`;return { from: config.sender, to: [item.email], subject, text: `${body}\n\n${ctaLabel}: ${ctaUrl}\n\nUnsubscribe: ${unsubscribeUrl}`, html, reply_to: config.replyTo || undefined, headers:{"List-Unsubscribe":`<${unsubscribeUrl}>`,"List-Unsubscribe-Post":"List-Unsubscribe=One-Click"},tags: [{ name: "organization_id", value: campaign.organization_id }, { name: "campaign_id", value: campaign.id }, { name: "brand", value: brand }] }});
         const batchHash = createHash("sha256").update(batch.map((item) => item.emailHash).join(":")).digest("hex").slice(0, 24);
         let response: Response;
         try { response = await fetch("https://api.resend.com/emails/batch", { method: "POST", headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json", "Idempotency-Key": `email-campaign/${campaign.id}/${batchHash}` }, body: JSON.stringify(payload) }); }
@@ -57,7 +62,7 @@ async function run(request: NextRequest) {
         sent += batch.length;
       }
       await admin.from("campaigns").update({ status: "published", published_at: new Date().toISOString(), publishing_error: null }).eq("id", campaign.id);
-      await admin.from("audit_logs").insert({ organization_id: campaign.organization_id, actor_id: null, action: "email_campaign.sent", object_type: "campaign", object_id: campaign.id, metadata: { eligible: recipients.length, sent, brand } });
+      await admin.from("audit_logs").insert({ organization_id: campaign.organization_id, actor_id: null, action: "email_campaign.sent", object_type: "campaign", object_id: campaign.id, metadata: { eligible: recipients.length, sent, brand, audience_mode:audienceMode,recipient_limit:audienceMode==="test"?recipientLimit:null } });
       results.push({ campaignId: campaign.id, status: "published", eligible: recipients.length, sent });
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : "Email campaign delivery failed.";
