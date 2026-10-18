@@ -25,8 +25,6 @@ export async function POST(request: Request) {
   if (!subject || !body || !ctaUrl || !productTitle) return NextResponse.json({ error: "Generate a complete email campaign with an approved storefront CTA before saving it." }, { status: 400, headers: access.headers });
 
   const admin = createSupabaseAdminClient();
-  const { data: membership } = await admin.from("organization_members").select("user_id").eq("organization_id", access.organizationId).eq("user_id", access.user.id).maybeSingle();
-  if (!membership) return NextResponse.json({ error: "Workspace membership is required to create campaign drafts." }, { status: 403, headers: access.headers });
 
   const { data: campaign, error: campaignError } = await admin.from("campaigns").insert({ organization_id: access.organizationId, name: `${productTitle} · ${brand === "kavia" ? "KAVIA" : "eSoukk"} email`, status: "ready_for_review", settings: { channel: "email", brand, ctaLabel, ctaUrl }, product_snapshot: { title: productTitle, url: ctaUrl }, prompt_version: "email-approval-v1", created_by: access.user.id }).select("id,status,created_at").single();
   if (campaignError || !campaign) return NextResponse.json({ error: campaignError?.message || "Unable to save the email campaign." }, { status: 500, headers: access.headers });
