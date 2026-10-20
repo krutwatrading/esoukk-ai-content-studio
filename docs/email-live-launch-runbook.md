@@ -25,7 +25,7 @@ Only subscribed Shopify contacts whose normalized addresses appear in `EMAIL_LIV
 
 1. Generate an email campaign and send the private account test.
 2. Save it for approval, approve it and schedule it.
-3. Invoke the protected `/api/email/send-due` worker with the configured `CRON_SECRET`.
+3. Click **Run scheduled test now** on that campaign. The protected worker receives that campaign ID and cannot sweep other queued campaigns while audience mode is `test`.
 4. Confirm delivery in the Phase 11.6 dashboard.
 5. Click the visible unsubscribe link, confirm the request and verify the suppression count increases.
 6. Schedule another controlled test and verify the unsubscribed address is excluded.

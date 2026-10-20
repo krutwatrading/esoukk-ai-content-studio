@@ -14,11 +14,14 @@ async function run(request: NextRequest) {
   if (process.env.EMAIL_BULK_SEND_ENABLED !== "true") return NextResponse.json({ error: "Bulk email delivery is locked. Scheduling is available, but customer sending is disabled." }, { status: 423 });
   if (!process.env.RESEND_API_KEY) return NextResponse.json({ error: "RESEND_API_KEY is missing." }, { status: 503 });
   if (!process.env.EMAIL_UNSUBSCRIBE_SECRET) return NextResponse.json({ error: "EMAIL_UNSUBSCRIBE_SECRET is required before customer delivery." }, { status: 503 });
-  const audienceMode=process.env.EMAIL_LIVE_AUDIENCE_MODE==="full"?"full":"test",testRecipients=new Set((process.env.EMAIL_LIVE_TEST_RECIPIENTS||"").split(",").map(value=>value.trim().toLowerCase()).filter(Boolean)),recipientLimit=Math.max(1,Math.min(20,Number(process.env.EMAIL_LIVE_RECIPIENT_LIMIT)||5));
+  const audienceMode=process.env.EMAIL_LIVE_AUDIENCE_MODE==="full"?"full":"test",testRecipients=new Set((process.env.EMAIL_LIVE_TEST_RECIPIENTS||"").split(",").map(value=>value.trim().toLowerCase()).filter(Boolean)),recipientLimit=Math.max(1,Math.min(20,Number(process.env.EMAIL_LIVE_RECIPIENT_LIMIT)||5)),requestedCampaignId=request.nextUrl.searchParams.get("campaignId");
   if(audienceMode==="test"&&!testRecipients.size)return NextResponse.json({error:"Test mode requires EMAIL_LIVE_TEST_RECIPIENTS before delivery."},{status:423});
+  if(audienceMode==="test"&&!requestedCampaignId)return NextResponse.json({error:"Test mode requires an explicitly selected campaign."},{status:423});
   const publicOrigin=(process.env.NEXT_PUBLIC_APP_URL||request.nextUrl.origin).replace(/\/$/,"");
   const admin = createSupabaseAdminClient(), now = new Date().toISOString();
-  const { data: campaigns, error: campaignError } = await admin.from("campaigns").select("id,organization_id,settings,scheduled_for,publish_attempts").eq("status", "scheduled").lte("scheduled_for", now).order("scheduled_for").limit(3);
+  let campaignQuery = admin.from("campaigns").select("id,organization_id,settings,scheduled_for,publish_attempts").eq("status", "scheduled").lte("scheduled_for", now).order("scheduled_for").limit(3);
+  if (requestedCampaignId) campaignQuery = campaignQuery.eq("id", requestedCampaignId).limit(1);
+  const { data: campaigns, error: campaignError } = await campaignQuery;
   if (campaignError) return NextResponse.json({ error: campaignError.message }, { status: 500 });
   const results: Array<{ campaignId: string; status: string; eligible?: number; sent?: number; error?: string }> = [];
   for (const campaign of campaigns || []) {
