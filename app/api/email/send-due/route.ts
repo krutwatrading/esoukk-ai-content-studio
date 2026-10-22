@@ -42,8 +42,14 @@ async function run(request: NextRequest) {
       ]);
       if (contactError || suppressionError || ledgerError) throw new Error(contactError?.message || suppressionError?.message || ledgerError?.message || "Audience check failed.");
       const blocked = new Set((suppressions || []).map((item) => item.email_hash)), completed = new Set((existing || []).filter((item) => ["sending", "sent", "suppressed"].includes(item.status)).map((item) => item.email_hash));
-      const uniqueEmails = [...new Set((contacts || []).map((item) => String(item.email || "").trim().toLowerCase()).filter(Boolean))];
-      const eligibleRecipients = uniqueEmails.map((email) => ({ email, emailHash: hash(email) })).filter((item) => !blocked.has(item.emailHash) && !completed.has(item.emailHash) && (audienceMode==="full"||testRecipients.has(item.email)));
+      // Controlled test recipients are an explicit operator allowlist. They do not
+      // need to be part of the live Shopify audience, but they still pass through
+      // suppression, duplicate-prevention, recipient-limit and unsubscribe guards.
+      // Full delivery continues to use only Shopify-subscribed contacts.
+      const uniqueEmails = audienceMode === "test"
+        ? [...testRecipients]
+        : [...new Set((contacts || []).map((item) => String(item.email || "").trim().toLowerCase()).filter(Boolean))];
+      const eligibleRecipients = uniqueEmails.map((email) => ({ email, emailHash: hash(email) })).filter((item) => !blocked.has(item.emailHash) && !completed.has(item.emailHash));
       const recipients=audienceMode==="test"?eligibleRecipients.slice(0,recipientLimit):eligibleRecipients;
       if (!recipients.length) throw new Error("No unsent, consented recipients are currently eligible.");
       const subject = String(content.subject || "").slice(0, 150), body = String(content.body || "").slice(0, 5000), ctaLabel = String(content.ctaLabel || "Shop now").slice(0, 50), ctaUrl = String(content.ctaUrl || ""), preview = String(content.preview || "").slice(0, 220);

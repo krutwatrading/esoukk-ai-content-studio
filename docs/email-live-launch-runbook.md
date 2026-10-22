@@ -19,7 +19,7 @@ EMAIL_BULK_SEND_ENABLED=true
 NEXT_PUBLIC_APP_URL=https://ai.esoukk.ae
 ```
 
-Only subscribed Shopify contacts whose normalized addresses appear in `EMAIL_LIVE_TEST_RECIPIENTS` can receive the controlled test.
+Controlled tests go only to normalized addresses in `EMAIL_LIVE_TEST_RECIPIENTS`. They remain subject to permanent suppression, duplicate prevention, the test recipient limit and signed unsubscribe. Full delivery continues to select only subscribed Shopify contacts.
 
 ## 3. Controlled test
 
