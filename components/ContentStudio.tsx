@@ -17,7 +17,6 @@ import PerformanceIntelligence from "./PerformanceIntelligence";
 import CampaignCalendar from "./CampaignCalendar";
 import CreativeProductionPanel from "./CreativeProductionPanel";
 import WhatsAppApprovalPanel from "./WhatsAppApprovalPanel";
-import AuditTrail from "./AuditTrail";
 import ProductionReadiness from "./ProductionReadiness";
 import EmailAutomation from "./EmailAutomation";
 import type { BrandProfile, CampaignCopy, CreativePlatform, ProductData, VisualStyle } from "@/lib/types";
@@ -76,7 +75,6 @@ export default function ContentStudio({initialBrandProfile}:{initialBrandProfile
     <CreativeProductionPanel/>
     <MetaPublishingPanel/>
     <ContentReviewQueue/>
-    <AuditTrail/>
     <PerformanceIntelligence/>
     <CampaignCalendar/>
     <ShopifyProductPicker selectedHandle={product?.handle} onSelect={selected=>{setProduct(selected);setUrl(selected.url);setCampaign(null);setStatus(`Selected ${selected.title}. Campaign settings are ready below.`);setError("");window.setTimeout(()=>document.getElementById("campaign-settings")?.scrollIntoView({behavior:"smooth",block:"start"}),100);}}/>
