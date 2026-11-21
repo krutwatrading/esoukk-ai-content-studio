@@ -9,10 +9,13 @@ async function context() {
   return membership ? { supabase, user, membership } : null;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const ctx = await context();
   if (!ctx) return NextResponse.json({ error: "Sign in is required." }, { status: 401 });
-  const { data: campaigns, error } = await ctx.supabase.from("campaigns").select("id,name,status,settings,product_snapshot,scheduled_for,published_at,publishing_error,external_post_url,publish_attempts,created_at").eq("organization_id",ctx.membership.organization_id).neq("status","archived").order("created_at",{ascending:false}).limit(30);
+  const archived=request.nextUrl.searchParams.get("view")==="archived";
+  let query=ctx.supabase.from("campaigns").select("id,name,status,settings,product_snapshot,scheduled_for,published_at,publishing_error,external_post_url,publish_attempts,created_at").eq("organization_id",ctx.membership.organization_id);
+  query=archived?query.eq("status","archived"):query.neq("status","archived");
+  const { data: campaigns, error } = await query.order("created_at",{ascending:false}).limit(100);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   const socialCampaigns=(campaigns||[]).filter(item=>(item.settings as {channel?:string}|null)?.channel!=="email");
   const ids=socialCampaigns.map(item=>item.id);
@@ -58,6 +61,17 @@ export async function PATCH(request: NextRequest) {
     const {error}=await ctx.supabase.from("campaigns").update({status:"archived",scheduled_for:null,settings:{...(campaign.settings||{}),archived_from_status:campaign.status,archived_at:new Date().toISOString()}}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
     if(error)return NextResponse.json({error:error.message},{status:400});
     return NextResponse.json({status:"archived"});
+  }
+  if (body.action === "restore") {
+    const {data:campaign,error:readError}=await ctx.supabase.from("campaigns").select("status,settings").eq("id",campaignId).eq("organization_id",ctx.membership.organization_id).single();
+    if(readError)return NextResponse.json({error:readError.message},{status:400});
+    if(campaign.status!=="archived")return NextResponse.json({error:"Only archived campaigns can be restored."},{status:409});
+    const previous=String((campaign.settings as {archived_from_status?:string}|null)?.archived_from_status||"");
+    const restoredStatus=previous==="published"||previous==="completed"?previous:"ready_for_review";
+    const {error}=await ctx.supabase.from("campaigns").update({status:restoredStatus,scheduled_for:null,publishing_error:null,settings:{...(campaign.settings||{}),restored_at:new Date().toISOString()}}).eq("id",campaignId).eq("organization_id",ctx.membership.organization_id);
+    if(error)return NextResponse.json({error:error.message},{status:400});
+    await ctx.supabase.from("audit_logs").insert({organization_id:ctx.membership.organization_id,actor_id:ctx.user.id,action:"campaign.restored",object_type:"campaign",object_id:campaignId,metadata:{restored_status:restoredStatus}});
+    return NextResponse.json({status:restoredStatus});
   }
   if (!variationId) return NextResponse.json({ error: "Campaign approval information is missing." }, { status: 400 });
   if (body.action === "approve") {

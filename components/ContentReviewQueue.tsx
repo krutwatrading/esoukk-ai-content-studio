@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import WhatsAppAudienceManager from "./WhatsAppAudienceManager";
-import { Archive, CalendarClock, CheckCircle2, ExternalLink, RefreshCw, Send, Trash2, XCircle } from "lucide-react";
+import { Archive, CalendarClock, CheckCircle2, ExternalLink, FolderArchive, RefreshCw, Send, Trash2, XCircle } from "lucide-react";
 
 type Item={id:string;name:string;status:string;scheduled_for:string|null;published_at:string|null;publishing_error:string|null;external_post_url:string|null;publish_attempts:number;product_snapshot:{title?:string};settings:{image_url?:string;platform?:string;channel?:string};variation:{id:string;platform:string;content:{title?:string;caption?:string;description?:string;body?:string;image_url?:string;template_name?:string;cta_label?:string;product_url?:string}}|null};
 
@@ -14,7 +14,7 @@ export default function ContentReviewQueue(){
   async function publish(item:Item){setBusy(`${item.id}:publish`);setMessage("");try{const response=await fetch(`/api/meta/publish-due?campaignId=${encodeURIComponent(item.id)}`,{method:"POST"}),data=await response.json();if(!response.ok)throw new Error(data.error);const result=data.results?.[0],label=item.settings.platform==="whatsapp"?"WhatsApp campaign":item.settings.platform==="facebook"?"Facebook post":item.settings.platform==="pinterest"?"Pinterest Pin":"Instagram post";setMessage(result?.status==="published"?`${label} published successfully.`:result?.error||"This campaign is not due yet.");await load()}catch(error){setMessage(error instanceof Error?error.message:"Publishing failed.")}finally{setBusy("")}}
   function refresh(){setLoading(true);void load()}
   return <section className="panel review-queue" id="content-review-queue">
-    <div className="queue-heading"><div><div className="eyebrow">CONTENT REVIEW QUEUE</div><h2>Preview, approve and publish</h2><p>Archive old campaigns or permanently delete failed and unwanted campaigns.</p></div><button type="button" className="ui-action queue-refresh" onClick={refresh} disabled={loading}><RefreshCw size={16}/>{loading?"Loading…":"Refresh"}</button></div>
+    <div className="queue-heading"><div><div className="eyebrow">CONTENT REVIEW QUEUE</div><h2>Preview, approve and publish</h2><p>Archive old campaigns or permanently delete failed and unwanted campaigns.</p></div><div className="queue-heading-actions"><a className="ui-action archive-folder-link" href="/archives"><FolderArchive size={16}/>Archived campaigns</a><button type="button" className="ui-action queue-refresh" onClick={refresh} disabled={loading}><RefreshCw size={16}/>{loading?"Loading…":"Refresh"}</button></div></div>
     {message&&<div className="status">{message}</div>}
     {!loading&&!items.length&&<div className="queue-empty">No active campaigns. Archived campaigns stay hidden.</div>}
     <div className="queue-list">{items.map(item=><ReviewCard key={item.id} item={item} busy={busy} action={action} publish={publish} remove={remove}/>)}</div>
